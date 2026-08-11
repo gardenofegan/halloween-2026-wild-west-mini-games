@@ -17,6 +17,7 @@ function updateGame() {
     } else if (gameStateWrapper.state === 'SCOREBOARD') {
         gameStateWrapper.scoreBoardTimer--;
         if (gameStateWrapper.scoreBoardTimer <= 0) {
+            gameStateWrapper.state = 'IDLE';
             // Trigger changeState('MENU')
             if (typeof window !== 'undefined' && window.changeState) {
                 window.changeState('MENU');
