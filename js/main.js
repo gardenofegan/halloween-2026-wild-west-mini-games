@@ -1,10 +1,12 @@
 // js/main.js
 let inputModule;
 let menuModule;
+let gameWrapperModule;
 if (typeof require !== 'undefined') {
     try {
         inputModule = require('./input.js');
         menuModule = require('./menu.js');
+        gameWrapperModule = require('./game_wrapper.js');
     } catch (e) {
         // Ignored in non-CommonJS module contexts
     }
@@ -14,6 +16,14 @@ const gameState = { current: 'MENU', input: null };
 
 function changeState(newState) {
     gameState.current = newState;
+    if (newState === 'GAME_ACTIVE') {
+        const doResetGame = (typeof resetGameWrapper === 'function')
+            ? resetGameWrapper
+            : (gameWrapperModule && gameWrapperModule.resetGameWrapper);
+        if (doResetGame) {
+            doResetGame();
+        }
+    }
 }
 
 if (typeof window !== 'undefined') {
@@ -43,6 +53,12 @@ function gameLoop() {
     const doDrawMenu = (typeof drawMenu === 'function')
         ? drawMenu
         : (menuModule && menuModule.drawMenu);
+    const doUpdateGame = (typeof updateGame === 'function')
+        ? updateGame
+        : (gameWrapperModule && gameWrapperModule.updateGame);
+    const doDrawGameWrapper = (typeof drawGameWrapper === 'function')
+        ? drawGameWrapper
+        : (gameWrapperModule && gameWrapperModule.drawGameWrapper);
 
     if (gameState.current === 'MENU') {
         if (doUpdateMenu && gameState.input) {
@@ -56,6 +72,26 @@ function gameLoop() {
                 const ctx = cachedCanvas.getContext('2d');
                 if (ctx && doDrawMenu) {
                     doDrawMenu(ctx, cachedCanvas.width, cachedCanvas.height);
+                }
+            }
+        }
+    } else if (gameState.current === 'GAME_ACTIVE') {
+        if (doUpdateGame) {
+            doUpdateGame();
+        }
+        if (typeof document !== 'undefined') {
+            if (!cachedCanvas) {
+                cachedCanvas = document.getElementById('gameCanvas');
+            }
+            if (cachedCanvas) {
+                const ctx = cachedCanvas.getContext('2d');
+                if (ctx) {
+                    ctx.clearRect(0, 0, cachedCanvas.width, cachedCanvas.height);
+                    ctx.fillStyle = '#2b1d0c';
+                    ctx.fillRect(0, 0, cachedCanvas.width, cachedCanvas.height);
+                    if (doDrawGameWrapper) {
+                        doDrawGameWrapper(ctx, cachedCanvas.width, cachedCanvas.height);
+                    }
                 }
             }
         }
