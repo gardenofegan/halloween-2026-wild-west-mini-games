@@ -59,7 +59,7 @@ function drawMenu(ctx, width, height) {
     // Header Title
     ctx.fillStyle = "#d4a359";
     ctx.font = "bold 48px 'Rye', 'Impact', sans-serif";
-    ctx.fillText("★ WILD WEST MINI-GAMES ★", width / 2, height * 0.2);
+    ctx.fillText("* WILD WEST MINI-GAMES *", width / 2, height * 0.2);
 
     // Selected Game Box
     const boxWidth = Math.min(width * 0.7, 600);
@@ -84,12 +84,16 @@ function drawMenu(ctx, width, height) {
     ctx.font = "bold 24px 'Rye', 'Impact', sans-serif";
 
     // Blue button (Left)
+    ctx.textAlign = "right";
     ctx.fillStyle = "#4a90e2";
-    ctx.fillText("◄ [BLUE] PREV", width / 2 - boxWidth / 2 - 110, height / 2);
+    ctx.fillText("< [BLUE] PREV", boxX - 20, height / 2);
 
     // Yellow button (Right)
+    ctx.textAlign = "left";
     ctx.fillStyle = "#f5a623";
-    ctx.fillText("NEXT [YELLOW] ►", width / 2 + boxWidth / 2 + 110, height / 2);
+    ctx.fillText("NEXT [YELLOW] >", boxX + boxWidth + 20, height / 2);
+
+    ctx.textAlign = "center";
 
     // Red button prompt
     ctx.fillStyle = "#e74c3c";
