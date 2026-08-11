@@ -32,6 +32,8 @@ function updateInput() {
     }
 }
 
+let cachedCanvas = null;
+
 function gameLoop() {
     updateInput();
 
@@ -47,11 +49,13 @@ function gameLoop() {
             doUpdateMenu(gameState.input);
         }
         if (typeof document !== 'undefined') {
-            const canvas = document.getElementById('gameCanvas');
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
+            if (!cachedCanvas) {
+                cachedCanvas = document.getElementById('gameCanvas');
+            }
+            if (cachedCanvas) {
+                const ctx = cachedCanvas.getContext('2d');
                 if (ctx && doDrawMenu) {
-                    doDrawMenu(ctx, canvas.width, canvas.height);
+                    doDrawMenu(ctx, cachedCanvas.width, cachedCanvas.height);
                 }
             }
         }

@@ -30,6 +30,12 @@ menuState.cooldown = 10;
 updateMenu({ players: [{ blue: false, yellow: true, red: false }] });
 assert.strictEqual(menuState.selectedIndex, 0, 'Index should not change while cooldown > 0');
 
+// Test 4b: Negative cooldown is treated defensively as ready (<= 0)
+menuState.selectedIndex = 0;
+menuState.cooldown = -5;
+updateMenu({ players: [{ blue: false, yellow: true, red: false }] });
+assert.strictEqual(menuState.selectedIndex, 1, 'Negative cooldown should be treated defensively as ready');
+
 // Test 5: Red button triggers state change to GAME_ACTIVE
 let stateChangedTo = null;
 global.changeState = (newState) => {
@@ -43,8 +49,15 @@ assert.strictEqual(stateChangedTo, 'GAME_ACTIVE', 'Red button should trigger cha
 const mockCtx = {
     fillStyle: '',
     font: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    textAlign: '',
+    textBaseline: '',
     fillRect: () => {},
-    fillText: () => {}
+    strokeRect: () => {},
+    fillText: () => {},
+    save: () => {},
+    restore: () => {}
 };
 drawMenu(mockCtx, 800, 600);
 
