@@ -103,9 +103,13 @@ function gameLoop() {
 }
 
 if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', () => {
+    if (typeof document !== 'undefined' && document.readyState !== 'loading') {
         gameLoop();
-    });
+    } else {
+        window.addEventListener('DOMContentLoaded', () => {
+            gameLoop();
+        });
+    }
 }
 
 // Export for testing in Node, but safe for browser
