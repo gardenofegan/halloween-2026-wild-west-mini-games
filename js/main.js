@@ -14,14 +14,14 @@ if (typeof require !== 'undefined') {
 
 const gameState = { current: 'MENU', input: null };
 
-function changeState(newState) {
+function changeState(newState, index = 0) {
     gameState.current = newState;
     if (newState === 'GAME_ACTIVE') {
         const doResetGame = (typeof resetGameWrapper === 'function')
             ? resetGameWrapper
             : (gameWrapperModule && gameWrapperModule.resetGameWrapper);
         if (doResetGame) {
-            doResetGame();
+            doResetGame(index);
         }
     }
 }
@@ -77,7 +77,7 @@ function gameLoop() {
         }
     } else if (gameState.current === 'GAME_ACTIVE') {
         if (doUpdateGame) {
-            doUpdateGame();
+            doUpdateGame(gameState.input);
         }
         if (typeof document !== 'undefined') {
             if (!cachedCanvas) {

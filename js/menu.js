@@ -32,7 +32,7 @@ function updateMenu(input) {
                         ? global.changeState
                         : null));
             if (doChangeState) {
-                doChangeState('GAME_ACTIVE');
+                doChangeState('GAME_ACTIVE', menuState.selectedIndex);
             }
         }
     }
