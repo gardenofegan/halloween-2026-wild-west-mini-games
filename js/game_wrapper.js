@@ -13,10 +13,24 @@ function resetGameWrapper(gameIndex) {
     let gameModule = null;
     if (typeof window !== 'undefined') {
         if (gameIndex === 0 && window.quickDraw) gameModule = window.quickDraw;
+        if (gameIndex === 1 && window.goldRush) gameModule = window.goldRush;
+        if (gameIndex === 2 && window.lassoCatch) gameModule = window.lassoCatch;
+        if (gameIndex === 3 && window.banditWhack) gameModule = window.banditWhack;
+        if (gameIndex === 4 && window.dynamiteToss) gameModule = window.dynamiteToss;
+        if (gameIndex === 5 && window.horseRace) gameModule = window.horseRace;
+        if (gameIndex === 6 && window.snakeBite) gameModule = window.snakeBite;
+        if (gameIndex === 7 && window.telegraphDecoder) gameModule = window.telegraphDecoder;
         // add others as they are built
     } else if (typeof global !== 'undefined') {
         try {
             if (gameIndex === 0) gameModule = require('./games/quick_draw.js');
+            if (gameIndex === 1) gameModule = require('./games/gold_rush.js');
+            if (gameIndex === 2) gameModule = require('./games/lasso_catch.js');
+            if (gameIndex === 3) gameModule = require('./games/bandit_whack.js');
+            if (gameIndex === 4) gameModule = require('./games/dynamite_toss.js');
+            if (gameIndex === 5) gameModule = require('./games/horse_race.js');
+            if (gameIndex === 6) gameModule = require('./games/snake_bite.js');
+            if (gameIndex === 7) gameModule = require('./games/telegraph_decoder.js');
         } catch (e) {}
     }
     

@@ -29,7 +29,7 @@
 - Consumes: None
 - Produces: `changeState(newState)`, global `gameState` object.
 
-- [ ] **Step 1: Write the failing test for state machine**
+- [x] **Step 1: Write the failing test for state machine**
 
 ```javascript
 // tests/test_state.js
@@ -47,12 +47,12 @@ try {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node tests/test_state.js`
 Expected: FAIL (Cannot find module)
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // js/main.js
@@ -66,15 +66,15 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node tests/test_state.js`
 Expected: PASS
 
-- [ ] **Step 5: Create Scaffolding**
+- [x] **Step 5: Create Scaffolding**
 Create `index.html` that includes `js/main.js` and sets up a `<canvas id="gameCanvas"></canvas>`. Create `css/style.css` with basic fullscreen canvas styling.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .
@@ -93,7 +93,7 @@ git commit -m "feat: project setup and state machine"
 - Consumes: Gamepad API
 - Produces: `getInputState()`, returning `{ players: [ { red: false, blue: false, yellow: false } ] }`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // tests/test_input.js
@@ -106,12 +106,12 @@ assert.strictEqual(state.players[0].red, true);
 console.log("Input mapping passed");
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node tests/test_input.js`
 Expected: FAIL
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // js/input.js
@@ -138,15 +138,15 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node tests/test_input.js`
 Expected: PASS
 
-- [ ] **Step 5: Hook into game loop**
+- [x] **Step 5: Hook into game loop**
 In `js/main.js`, add a `requestAnimationFrame` loop that calls `navigator.getGamepads()` and passes it to `parseGamepadState`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add js/input.js js/main.js tests/test_input.js
@@ -165,7 +165,7 @@ git commit -m "feat: input handler using gamepad api"
 - Consumes: `getInputState()`
 - Produces: Rendered carousel on Canvas, `selectedGame` index.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // tests/test_menu.js
@@ -179,12 +179,12 @@ assert.strictEqual(menuState.selectedIndex, 7); // Loops back to end of 8 games
 console.log("Menu update passed");
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node tests/test_menu.js`
 Expected: FAIL
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // js/menu.js
@@ -219,15 +219,15 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node tests/test_menu.js`
 Expected: PASS
 
-- [ ] **Step 5: Hook up rendering**
+- [x] **Step 5: Hook up rendering**
 In `js/main.js`, add `drawMenu()` and `updateMenu()` to the main loop when `gameState.current === 'MENU'`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add js/menu.js js/main.js tests/test_menu.js
@@ -246,10 +246,10 @@ git commit -m "feat: menu carousel logic"
 - Consumes: Game configurations.
 - Produces: Timer, scoreboard display, cleanup routines.
 
-- [ ] **Step 1: Setup Time Limit Logic**
+- [x] **Step 1: Setup Time Limit Logic**
 Create a wrapper that automatically ends a game after 60 seconds and shows a scoreboard for 10 seconds, then calls `changeState('MENU')`.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add js/game_wrapper.js js/main.js
