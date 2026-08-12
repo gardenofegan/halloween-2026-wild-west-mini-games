@@ -19,6 +19,8 @@ function runTests() {
     assert.deepStrictEqual(quickDraw.scores, [0, 0, 0, 0], 'Scores should reset to 0');
     assert.strictEqual(quickDraw.state, 'WAITING', 'Initial state should be WAITING');
     
+    const activePlayers = [true, true, true, true];
+
     // Send an initial frame to satisfy edge detection logic
     quickDraw.update({
         players: [
@@ -27,7 +29,7 @@ function runTests() {
             { red: false, blue: false, yellow: false, green: false },
             { red: false, blue: false, yellow: false, green: false }
         ]
-    });
+    }, activePlayers);
 
     // Simulate False Start
     quickDraw.update({
@@ -37,14 +39,14 @@ function runTests() {
             { red: false, blue: false, yellow: false, green: false },
             { red: false, blue: false, yellow: false, green: false }
         ]
-    });
+    }, activePlayers);
     
     assert.strictEqual(quickDraw.falseStarts[0], true, 'Player 1 should have false started');
     
     // Wait until DRAW state
     let safetyCounter = 0;
     while(quickDraw.state === 'WAITING' && safetyCounter < 60 * 10) {
-        quickDraw.update({ players: [{}, {}, {}, {}] });
+        quickDraw.update({ players: [{}, {}, {}, {}] }, activePlayers);
         safetyCounter++;
     }
     
@@ -58,7 +60,7 @@ function runTests() {
             { red: false },
             { red: false }
         ]
-    });
+    }, activePlayers);
     assert.strictEqual(quickDraw.scores[0], 0, 'Player 1 cannot score after false start');
     assert.strictEqual(quickDraw.state, 'DRAW', 'State should still be DRAW');
 
@@ -70,7 +72,7 @@ function runTests() {
             { red: false },
             { red: false }
         ]
-    });
+    }, activePlayers);
     
     assert.strictEqual(quickDraw.scores[1], 1, 'Player 2 should score 1 point');
     assert.strictEqual(quickDraw.state, 'ROUND_OVER', 'State should change to ROUND_OVER');
@@ -78,7 +80,7 @@ function runTests() {
     // Wait out ROUND_OVER
     safetyCounter = 0;
     while(quickDraw.state === 'ROUND_OVER' && safetyCounter < 60 * 5) {
-        quickDraw.update({ players: [{}, {}, {}, {}] });
+        quickDraw.update({ players: [{}, {}, {}, {}] }, activePlayers);
         safetyCounter++;
     }
     

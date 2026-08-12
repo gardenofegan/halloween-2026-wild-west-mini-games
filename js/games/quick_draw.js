@@ -23,7 +23,7 @@ const quickDraw = {
         this.timer = Math.floor(Math.random() * 240) + 120;
     },
 
-    update: function(input) {
+    update: function(input, activePlayers) {
         if (!input || !input.players) return;
 
         if (!this.prevInput) {
@@ -38,11 +38,26 @@ const quickDraw = {
         if (this.state === 'WAITING') {
             this.timer--;
             
+            let allFalseStarted = true;
+            let anyActive = false;
+
             // Check for false starts
             for (let i = 0; i < 4; i++) {
-                if (isPressed(i, 'red') && !this.falseStarts[i]) {
-                    this.falseStarts[i] = true;
+                if (activePlayers && activePlayers[i]) {
+                    anyActive = true;
+                    if (isPressed(i, 'red') && !this.falseStarts[i]) {
+                        this.falseStarts[i] = true;
+                    }
+                    if (!this.falseStarts[i]) {
+                        allFalseStarted = false;
+                    }
                 }
+            }
+
+            if (anyActive && allFalseStarted) {
+                this.startNewRound();
+                this.prevInput = { players: input.players.map(p => ({ ...p })) };
+                return;
             }
 
             if (this.timer <= 0) {
@@ -73,22 +88,47 @@ const quickDraw = {
         ctx.textAlign = 'center';
         
         if (this.state === 'WAITING') {
+            // Draw placeholder cowboy walking away
+            ctx.fillStyle = '#3a2312'; // Dark silhouette
+            ctx.fillRect(width / 2 - 50, height / 2 - 100, 100, 200); // Body
+            ctx.beginPath();
+            ctx.arc(width / 2, height / 2 - 120, 40, 0, Math.PI * 2); // Head
+            ctx.fill();
+            
+            ctx.fillStyle = '#f5a623';
+            ctx.font = "bold 30px 'Rye', 'Impact', sans-serif";
+            ctx.fillText("[Cowboy walking away placeholder]", width / 2, height / 2 + 140);
+
             ctx.fillStyle = 'white';
             ctx.font = "bold 60px 'Rye', 'Impact', sans-serif";
-            ctx.fillText("WAIT FOR IT...", width / 2, height / 2);
+            ctx.fillText("WAIT FOR IT...", width / 2, height / 2 - 200);
             
             // Show false starts
             ctx.font = "bold 30px 'Rye', sans-serif";
             for (let i = 0; i < 4; i++) {
                 if (this.falseStarts[i]) {
                     ctx.fillStyle = 'red';
-                    ctx.fillText(`Player ${i+1} FALSE START!`, width / 2, height / 2 + 50 + i * 40);
+                    ctx.fillText(`Player ${i+1} FALSE START!`, width / 4 * i + width / 8, height - 120);
                 }
             }
         } else if (this.state === 'DRAW') {
+            // Draw placeholder cowboy facing and shooting
+            ctx.fillStyle = '#ff6b6b'; // Brighter silhouette
+            ctx.fillRect(width / 2 - 60, height / 2 - 100, 120, 200); // Body
+            ctx.beginPath();
+            ctx.arc(width / 2, height / 2 - 120, 40, 0, Math.PI * 2); // Head
+            ctx.fill();
+            // Add a gun shape
+            ctx.fillStyle = '#333';
+            ctx.fillRect(width / 2 + 60, height / 2 - 20, 60, 20); // Gun
+
+            ctx.fillStyle = '#fff';
+            ctx.font = "bold 30px 'Rye', 'Impact', sans-serif";
+            ctx.fillText("[Cowboy turns and draws placeholder]", width / 2, height / 2 + 140);
+
             ctx.fillStyle = '#ff3333';
             ctx.font = "bold 120px 'Rye', 'Impact', sans-serif";
-            ctx.fillText("DRAW!", width / 2, height / 2);
+            ctx.fillText("DRAW!", width / 2, height / 2 - 200);
         } else if (this.state === 'ROUND_OVER') {
             ctx.fillStyle = 'yellow';
             ctx.font = "bold 80px 'Rye', 'Impact', sans-serif";

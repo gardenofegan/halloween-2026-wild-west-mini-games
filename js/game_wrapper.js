@@ -1,10 +1,13 @@
 // js/game_wrapper.js
-const gameStateWrapper = { timer: 3600, state: 'PLAYING', scoreBoardTimer: 600, activeGame: null }; // 60s at 60fps, 10s scoreboard
+const gameStateWrapper = { timer: 3600, state: 'CHECK_IN', checkInTimer: 300, scoreBoardTimer: 600, activeGame: null, activePlayers: [false, false, false, false], prevInput: null };
 
 function resetGameWrapper(gameIndex) {
     gameStateWrapper.timer = 3600;
-    gameStateWrapper.state = 'PLAYING';
+    gameStateWrapper.state = 'CHECK_IN';
+    gameStateWrapper.checkInTimer = 300; // 5 seconds
     gameStateWrapper.scoreBoardTimer = 600;
+    gameStateWrapper.activePlayers = [false, false, false, false];
+    gameStateWrapper.prevInput = null;
     
     // Look up game by index
     let gameModule = null;
@@ -24,13 +27,45 @@ function resetGameWrapper(gameIndex) {
 }
 
 function updateGame(input) {
-    if (gameStateWrapper.state === 'PLAYING') {
+    if (!gameStateWrapper.prevInput) {
+        gameStateWrapper.prevInput = { players: input.players.map(p => ({ ...p })) };
+        return;
+    }
+
+    const isPressed = (playerIndex, btn) => {
+        return input.players[playerIndex][btn] && !gameStateWrapper.prevInput.players[playerIndex][btn];
+    };
+
+    if (gameStateWrapper.state === 'CHECK_IN') {
+        gameStateWrapper.checkInTimer--;
+        let newJoin = false;
+        
+        for (let i = 0; i < 4; i++) {
+            if (isPressed(i, 'red') && !gameStateWrapper.activePlayers[i]) {
+                gameStateWrapper.activePlayers[i] = true;
+                newJoin = true;
+            }
+        }
+        
+        if (newJoin) {
+            gameStateWrapper.checkInTimer = 300; // Reset countdown to 5s if someone joins
+        }
+        
+        const anyJoined = gameStateWrapper.activePlayers.some(p => p);
+        if (anyJoined && gameStateWrapper.checkInTimer <= 0) {
+            gameStateWrapper.state = 'PLAYING';
+        }
+    } else if (gameStateWrapper.state === 'PLAYING') {
         gameStateWrapper.timer--;
         if (gameStateWrapper.timer <= 0) {
             gameStateWrapper.state = 'SCOREBOARD';
             gameStateWrapper.scoreBoardTimer = 600;
         } else if (gameStateWrapper.activeGame && gameStateWrapper.activeGame.update) {
-            gameStateWrapper.activeGame.update(input);
+            // Filter input for active players only
+            const filteredInput = {
+                players: input.players.map((p, i) => gameStateWrapper.activePlayers[i] ? { ...p } : { red: false, green: false, yellow: false, orange: false, blue: false })
+            };
+            gameStateWrapper.activeGame.update(filteredInput, gameStateWrapper.activePlayers);
         }
     } else if (gameStateWrapper.state === 'SCOREBOARD') {
         gameStateWrapper.scoreBoardTimer--;
@@ -46,9 +81,39 @@ function updateGame(input) {
             }
         }
     }
+    
+    gameStateWrapper.prevInput = { players: input.players.map(p => ({ ...p })) };
 }
 
 function drawGameWrapper(ctx, width, height) {
+    if (gameStateWrapper.state === 'CHECK_IN') {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#f5a623";
+        ctx.font = "bold 60px 'Rye', 'Impact', sans-serif";
+        ctx.fillText("PRESS RED TO JOIN!", width / 2, height / 2 - 100);
+
+        const colors = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
+        ctx.font = "bold 40px 'Rye', 'Impact', sans-serif";
+        for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = gameStateWrapper.activePlayers[i] ? colors[i] : "#555";
+            ctx.fillText(`PLAYER ${i + 1}`, width / 4 * i + width / 8, height / 2);
+            if (gameStateWrapper.activePlayers[i]) {
+                ctx.fillText("READY!", width / 4 * i + width / 8, height / 2 + 50);
+            }
+        }
+
+        const anyJoined = gameStateWrapper.activePlayers.some(p => p);
+        if (anyJoined) {
+            ctx.fillStyle = "white";
+            ctx.font = "bold 40px 'Rye', 'Impact', sans-serif";
+            ctx.fillText(`Game starting in ${Math.ceil(gameStateWrapper.checkInTimer / 60)}...`, width / 2, height / 2 + 150);
+        }
+        return;
+    }
+
     if (gameStateWrapper.state === 'PLAYING' && gameStateWrapper.activeGame && gameStateWrapper.activeGame.draw) {
         gameStateWrapper.activeGame.draw(ctx, width, height);
     }
@@ -69,7 +134,7 @@ function drawGameWrapper(ctx, width, height) {
                 ctx.fillText(`Player ${i + 1}: ${scores[i]}`, width / 2, height / 2 + (i * 60));
             }
         }
-    } else {
+    } else if (gameStateWrapper.state === 'PLAYING') {
         // Draw the 60s timer in the corner
         ctx.fillStyle = "white";
         ctx.textAlign = "right";
