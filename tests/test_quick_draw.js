@@ -19,6 +19,16 @@ function runTests() {
     assert.deepStrictEqual(quickDraw.scores, [0, 0, 0, 0], 'Scores should reset to 0');
     assert.strictEqual(quickDraw.state, 'WAITING', 'Initial state should be WAITING');
     
+    // Send an initial frame to satisfy edge detection logic
+    quickDraw.update({
+        players: [
+            { red: false, blue: false, yellow: false, green: false },
+            { red: false, blue: false, yellow: false, green: false },
+            { red: false, blue: false, yellow: false, green: false },
+            { red: false, blue: false, yellow: false, green: false }
+        ]
+    });
+
     // Simulate False Start
     quickDraw.update({
         players: [

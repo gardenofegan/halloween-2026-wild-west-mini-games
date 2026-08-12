@@ -7,8 +7,11 @@ const quickDraw = {
     falseStarts: [false, false, false, false],
     winnerIndex: -1,
     
+    prevInput: null,
+
     reset: function() {
         this.scores = [0, 0, 0, 0];
+        this.prevInput = null;
         this.startNewRound();
     },
 
@@ -23,12 +26,21 @@ const quickDraw = {
     update: function(input) {
         if (!input || !input.players) return;
 
+        if (!this.prevInput) {
+            this.prevInput = { players: input.players.map(p => ({ ...p })) };
+            return; // Skip first frame to prevent menu button holds from bleeding in
+        }
+
+        const isPressed = (playerIndex, btn) => {
+            return input.players[playerIndex][btn] && !this.prevInput.players[playerIndex][btn];
+        };
+
         if (this.state === 'WAITING') {
             this.timer--;
             
             // Check for false starts
             for (let i = 0; i < 4; i++) {
-                if (input.players[i] && input.players[i].red && !this.falseStarts[i]) {
+                if (isPressed(i, 'red') && !this.falseStarts[i]) {
                     this.falseStarts[i] = true;
                 }
             }
@@ -38,7 +50,7 @@ const quickDraw = {
             }
         } else if (this.state === 'DRAW') {
             for (let i = 0; i < 4; i++) {
-                if (input.players[i] && input.players[i].red && !this.falseStarts[i]) {
+                if (isPressed(i, 'red') && !this.falseStarts[i]) {
                     // We have a winner
                     this.winnerIndex = i;
                     this.scores[i]++;
@@ -53,6 +65,8 @@ const quickDraw = {
                 this.startNewRound();
             }
         }
+
+        this.prevInput = { players: input.players.map(p => ({ ...p })) };
     },
 
     draw: function(ctx, width, height) {
