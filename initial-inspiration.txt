@@ -5,10 +5,10 @@ One of those experiences that I would like to create this year is a Wild West mi
 
 The goal of this Wild West mini games is to be super duper easy to use because it'll mostly be used by young children and teenagers.Laptop I plan to use for this event and run this is a windows laptop.  Likely want it to be HTML / JavaScript built game.  The older the laptop it will run on the better, but I have ones from Windows XP up to Windows 10 so can adjust as needed. I plan to project this game on a projector so the easier it is to see the game, text, and objectives the better.  The very most key is the input device will be a Playstation 2 USB Buzz Controllers.  So max of 4 players at a time.  Main idea is to use the large red button as cleanly as possible.  Example - quick draw game where have to press the red button the quickest but the "DRAW" animation calls out at random times.  
 
-Since it is a Wild West party I would love to have fonts and assets that make it feel Wild West.  Look at my other photo booth for basic inspiration and fonts - https://github.com/gardenofegan/halloween-2026-receipt-printer-photo-booth.  For more detailed inspiration and game assets look at https://itch.io/game-assets/tag-wild-west.  The theme is a major part that drives the fun.
+Since it is a Wild West party I would love to have fonts and assets that make it feel Wild West.  Look at my other photo booth for basic inspiration and fonts - https://github.com/[REDACTED]/halloween-2026-receipt-printer-photo-booth.  For more detailed inspiration and game assets look at https://itch.io/game-assets/tag-wild-west.  The theme is a major part that drives the fun.
 
 
-The GitHub repo I'd like all the issues and final repo to live at is https://github.com/gardenofegan/halloween-2026-wild-west-mini-games
+The GitHub repo I'd like all the issues and final repo to live at is https://github.com/[REDACTED]/halloween-2026-wild-west-mini-games
 
 I imagine this can all run as a web application but as mentioned previously it needs to be super duper easy and foolproof for teens and kids to use so I would like to lockout the laptop from being escaped from so only this application and a super intuitive interface the kids can easily select the games to play ONLY using the Buzz USB controllers.  The primary button for the games should be the large red button.  If it's ridiculously intuitive we can consider a game that also uses some of the 4 color buttons underneath but it would have to be so super duper intuitive.  
 
