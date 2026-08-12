@@ -8,7 +8,7 @@ function resetGameWrapper(gameIndex) {
     
     // Look up game by index
     let gameModule = null;
-    if (typeof window !== 'undefined' && window.gamesList) {
+    if (typeof window !== 'undefined') {
         if (gameIndex === 0 && window.quickDraw) gameModule = window.quickDraw;
         // add others as they are built
     } else if (typeof global !== 'undefined') {
