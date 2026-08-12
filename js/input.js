@@ -14,8 +14,8 @@ function parseGamepadState(gamepads) {
         if (gp) {
             state.players.push({
                 red: !!(gp.buttons && gp.buttons[0] && gp.buttons[0].pressed),
-                green: !!(gp.buttons && gp.buttons[1] && gp.buttons[1].pressed),
-                yellow: !!(gp.buttons && gp.buttons[2] && gp.buttons[2].pressed),
+                yellow: !!(gp.buttons && gp.buttons[1] && gp.buttons[1].pressed),
+                green: !!(gp.buttons && gp.buttons[2] && gp.buttons[2].pressed),
                 orange: !!(gp.buttons && gp.buttons[3] && gp.buttons[3].pressed),
                 blue: !!(gp.buttons && gp.buttons[4] && gp.buttons[4].pressed)
             });
