@@ -13,8 +13,21 @@ const dynamiteToss = {
     ],
 
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.dynamite) {
+            this.images.dynamite = new Image();
+            this.images.dynamite.src = 'assets/images/platformer/Base pack/Items/bomb.png';
+            this.images.boom = new Image();
+            this.images.boom.src = 'assets/images/particle/PNG (Transparent)/fire_01.png';
+            this.images.smoke = new Image();
+            this.images.smoke.src = 'assets/images/particle/PNG (Transparent)/smoke_01.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         for (let i = 0; i < 4; i++) {
@@ -146,10 +159,14 @@ const dynamiteToss = {
             if (p.state === 'ANIMATING_SUCCESS') {
                 // EXPLOSION
                 const boomRadius = (60 - p.timer) * 3;
-                ctx.fillStyle = (Math.floor(p.timer / 4) % 2 === 0) ? '#ff0' : '#f00';
-                ctx.beginPath();
-                ctx.arc(centerX, bottomY - 60, boomRadius, 0, Math.PI * 2);
-                ctx.fill();
+                if (this.images.boom && this.images.boom.complete) {
+                    ctx.drawImage(this.images.boom, centerX - boomRadius, bottomY - 60 - boomRadius, boomRadius*2, boomRadius*2);
+                } else {
+                    ctx.fillStyle = (Math.floor(p.timer / 4) % 2 === 0) ? '#ff0' : '#f00';
+                    ctx.beginPath();
+                    ctx.arc(centerX, bottomY - 60, boomRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
                 
                 ctx.fillStyle = '#fff';
                 ctx.font = "bold 50px 'Impact', sans-serif";
@@ -160,11 +177,15 @@ const dynamiteToss = {
                 ctx.font = "bold 40px 'Impact', sans-serif";
                 ctx.fillText("FIZZLE...", centerX, bottomY - 150);
                 
-                // Draw burnt mark
-                ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                ctx.beginPath();
-                ctx.arc(centerX, bottomY - 60, 50, 0, Math.PI * 2);
-                ctx.fill();
+                if (this.images.smoke && this.images.smoke.complete) {
+                    ctx.drawImage(this.images.smoke, centerX - 50, bottomY - 110, 100, 100);
+                } else {
+                    // Draw burnt mark
+                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                    ctx.beginPath();
+                    ctx.arc(centerX, bottomY - 60, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
 
             // Draw Power Meter
@@ -205,10 +226,14 @@ const dynamiteToss = {
 
             // Draw Dynamite (Player's hand)
             if (p.state === 'CHARGING' || p.state === 'IDLE') {
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(centerX + 60, bottomY - 200, 30, 80); // Stick
-                ctx.fillStyle = '#111';
-                ctx.fillRect(centerX + 70, bottomY - 220, 10, 20); // Wick
+                if (this.images.dynamite && this.images.dynamite.complete) {
+                    ctx.drawImage(this.images.dynamite, centerX + 40, bottomY - 220, 70, 70);
+                } else {
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(centerX + 60, bottomY - 200, 30, 80); // Stick
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(centerX + 70, bottomY - 220, 10, 20); // Wick
+                }
                 
                 if (p.state === 'CHARGING') {
                     // Spark

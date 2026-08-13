@@ -11,6 +11,21 @@ const gamesList = [
     'Telegraph'
 ];
 
+const menuAssets = {
+    panel: null, buttonBlue: null, buttonYellow: null, buttonRed: null, navSound: null, selectSound: null
+};
+if (typeof window !== 'undefined') {
+    menuAssets.panel = new Image(); menuAssets.panel.src = 'assets/images/ui-pack/PNG/panel_brown.png';
+    menuAssets.buttonBlue = new Image(); menuAssets.buttonBlue.src = 'assets/images/ui-pack/PNG/buttonLong_blue.png';
+    menuAssets.buttonYellow = new Image(); menuAssets.buttonYellow.src = 'assets/images/ui-pack/PNG/buttonLong_beige.png';
+    menuAssets.buttonRed = new Image(); menuAssets.buttonRed.src = 'assets/images/ui-pack/PNG/buttonLong_brown.png';
+    if (typeof Audio !== 'undefined') {
+        menuAssets.navSound = new Audio('assets/images/ui-pack/Sounds/tap-a.ogg');
+        menuAssets.selectSound = new Audio('assets/images/ui-pack/Sounds/click-a.ogg');
+    }
+}
+function playSnd(s) { if(s) { s.cloneNode().play().catch(e=>{}); } }
+
 function updateMenu(input) {
     if (menuState.cooldown > 0) menuState.cooldown--;
 
@@ -18,12 +33,15 @@ function updateMenu(input) {
 
     if (menuState.cooldown <= 0) {
         if (input.players[0].blue) { // Move Left
+            playSnd(menuAssets.navSound);
             menuState.selectedIndex = (menuState.selectedIndex - 1 + gamesList.length) % gamesList.length;
             menuState.cooldown = 15;
         } else if (input.players[0].yellow) { // Move Right
+            playSnd(menuAssets.navSound);
             menuState.selectedIndex = (menuState.selectedIndex + 1) % gamesList.length;
             menuState.cooldown = 15;
         } else if (input.players[0].red) { // Select
+            playSnd(menuAssets.selectSound);
             const doChangeState = (typeof changeState === 'function')
                 ? changeState
                 : (typeof window !== 'undefined' && window.changeState
@@ -67,12 +85,16 @@ function drawMenu(ctx, width, height) {
     const boxX = (width - boxWidth) / 2;
     const boxY = (height - boxHeight) / 2;
 
-    ctx.fillStyle = "#3d2314";
-    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-    ctx.strokeStyle = "#d4a359";
-    ctx.lineWidth = 4;
-    if (typeof ctx.strokeRect === 'function') {
-        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+    if (menuAssets.panel && menuAssets.panel.complete) {
+        ctx.drawImage(menuAssets.panel, boxX, boxY, boxWidth, boxHeight);
+    } else {
+        ctx.fillStyle = "#3d2314";
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.strokeStyle = "#d4a359";
+        ctx.lineWidth = 4;
+        if (typeof ctx.strokeRect === 'function') {
+            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+        }
     }
 
     // Game Title in Massive Font
@@ -84,21 +106,27 @@ function drawMenu(ctx, width, height) {
     ctx.font = "bold 24px 'Rye', 'Impact', sans-serif";
 
     // Blue button (Left)
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#4a90e2";
-    ctx.fillText("< [BLUE] PREV", boxX - 20, height / 2);
+    if (menuAssets.buttonBlue && menuAssets.buttonBlue.complete) {
+        ctx.drawImage(menuAssets.buttonBlue, boxX - 320, height / 2 - 40, 300, 80);
+    }
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
+    ctx.fillText("< [BLUE] PREV", boxX - 170, height / 2);
 
     // Yellow button (Right)
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#f5a623";
-    ctx.fillText("NEXT [YELLOW] >", boxX + boxWidth + 20, height / 2);
-
-    ctx.textAlign = "center";
+    if (menuAssets.buttonYellow && menuAssets.buttonYellow.complete) {
+        ctx.drawImage(menuAssets.buttonYellow, boxX + boxWidth + 20, height / 2 - 40, 300, 80);
+    }
+    ctx.fillStyle = "#333"; // dark text on beige
+    ctx.fillText("NEXT [YELLOW] >", boxX + boxWidth + 170, height / 2);
 
     // Red button prompt
-    ctx.fillStyle = "#e74c3c";
     ctx.font = "bold 32px 'Rye', 'Impact', sans-serif";
-    ctx.fillText("PRESS BIG RED BUTTON TO START!", width / 2, height * 0.82);
+    if (menuAssets.buttonRed && menuAssets.buttonRed.complete) {
+        ctx.drawImage(menuAssets.buttonRed, width / 2 - 400, height * 0.8 - 40, 800, 80);
+    }
+    ctx.fillStyle = "#fff";
+    ctx.fillText("PRESS BIG RED BUTTON TO START!", width / 2, height * 0.8);
 
     if (ctx.restore) ctx.restore();
 }

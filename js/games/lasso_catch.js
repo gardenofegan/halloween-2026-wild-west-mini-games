@@ -11,9 +11,20 @@ const lassoCatch = {
         { x: 0, speed: 4, direction: 1, cooldown: 0 }
     ],
 
+    ],
+
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.cow) {
+            this.images.cow = new Image();
+            this.images.cow.src = 'assets/images/animals/PNG/Round/cow.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         for (let i = 0; i < 4; i++) {
@@ -167,22 +178,33 @@ const lassoCatch = {
             }
             
             // Draw Cow Body
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(-30, -20, 60, 40);
-            ctx.fillStyle = '#000';
-            ctx.fillRect(-20, -10, 20, 20); // Cow spots
-            ctx.fillRect(10, 0, 15, 15);
-            
-            // Draw Cow Head based on direction
-            ctx.fillStyle = '#fff';
-            if (target.direction === 1) {
-                ctx.fillRect(20, -30, 30, 30);
-                ctx.fillStyle = '#000';
-                ctx.fillRect(40, -25, 5, 5); // Eye
+            if (this.images.cow && this.images.cow.complete) {
+                const w = this.images.cow.width;
+                const h = this.images.cow.height;
+                ctx.save();
+                if (target.direction === -1) {
+                    ctx.scale(-1, 1);
+                }
+                ctx.drawImage(this.images.cow, -w/2, -h/2, w, h);
+                ctx.restore();
             } else {
-                ctx.fillRect(-50, -30, 30, 30);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-30, -20, 60, 40);
                 ctx.fillStyle = '#000';
-                ctx.fillRect(-45, -25, 5, 5); // Eye
+                ctx.fillRect(-20, -10, 20, 20); // Cow spots
+                ctx.fillRect(10, 0, 15, 15);
+                
+                // Draw Cow Head based on direction
+                ctx.fillStyle = '#fff';
+                if (target.direction === 1) {
+                    ctx.fillRect(20, -30, 30, 30);
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(40, -25, 5, 5); // Eye
+                } else {
+                    ctx.fillRect(-50, -30, 30, 30);
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(-45, -25, 5, 5); // Eye
+                }
             }
             
             ctx.restore();

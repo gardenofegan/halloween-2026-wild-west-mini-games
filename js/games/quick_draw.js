@@ -8,8 +8,33 @@ const quickDraw = {
     winnerIndex: -1,
     
     prevInput: null,
+    
+    images: {},
+    imagesLoaded: false,
+
+    loadImages: function() {
+        if (this.imagesLoaded) return;
+        const imgList = {
+            back: 'assets/images/Adventurer/Poses/adventurer_back.png',
+            stand: 'assets/images/Adventurer/Poses/adventurer_stand.png',
+            cheer: 'assets/images/Adventurer/Poses/adventurer_cheer1.png',
+            hurt: 'assets/images/Adventurer/Poses/adventurer_hurt.png',
+            rifle: 'assets/images/rifle.png',
+            shot: 'assets/images/shot_yellow_large.png',
+            bulletWinner: 'assets/images/icon_bullet_gold_long.png',
+            bulletLoser: 'assets/images/icon_bullet_silver_long.png',
+            crosshair: 'assets/images/crosshair_white_large.png'
+        };
+        for (let key in imgList) {
+            let img = new Image();
+            img.src = imgList[key];
+            this.images[key] = img;
+        }
+        this.imagesLoaded = true;
+    },
 
     reset: function() {
+        if (typeof Image !== 'undefined') this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         this.startNewRound();
@@ -19,6 +44,7 @@ const quickDraw = {
         this.state = 'WAITING';
         this.falseStarts = [false, false, false, false];
         this.winnerIndex = -1;
+        this.shotTimers = [-1, -1, -1, -1];
         // Random timer between 2 and 6 seconds (120 to 360 frames at 60fps)
         this.timer = Math.floor(Math.random() * 240) + 120;
     },
@@ -63,21 +89,32 @@ const quickDraw = {
             if (this.timer <= 0) {
                 this.state = 'DRAW';
             }
-        } else if (this.state === 'DRAW') {
+        } else if (this.state === 'DRAW' || this.state === 'ROUND_OVER') {
             for (let i = 0; i < 4; i++) {
-                if (isPressed(i, 'red') && !this.falseStarts[i]) {
-                    // We have a winner
-                    this.winnerIndex = i;
-                    this.scores[i]++;
-                    this.state = 'ROUND_OVER';
-                    this.timer = 180; // Show winner for 3 seconds (180 frames)
-                    break;
+                if (activePlayers && activePlayers[i]) {
+                    if (isPressed(i, 'red') && !this.falseStarts[i] && this.shotTimers[i] === -1) {
+                        this.shotTimers[i] = 0;
+                        if (this.state === 'DRAW') {
+                            this.winnerIndex = i;
+                            this.scores[i]++;
+                            this.state = 'ROUND_OVER';
+                            this.timer = 180; // Show winner for 3 seconds
+                        }
+                    }
                 }
             }
-        } else if (this.state === 'ROUND_OVER') {
-            this.timer--;
-            if (this.timer <= 0) {
-                this.startNewRound();
+            if (this.state === 'ROUND_OVER') {
+                this.timer--;
+                if (this.timer <= 0) {
+                    this.startNewRound();
+                }
+            }
+        }
+        
+        // Update shot timers
+        for (let i = 0; i < 4; i++) {
+            if (this.shotTimers && this.shotTimers[i] >= 0) {
+                this.shotTimers[i]++;
             }
         }
 
@@ -86,58 +123,132 @@ const quickDraw = {
 
     draw: function(ctx, width, height) {
         ctx.textAlign = 'center';
+        const colors = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
         
-        if (this.state === 'WAITING') {
-            // Draw placeholder cowboy walking away
-            ctx.fillStyle = '#3a2312'; // Dark silhouette
-            ctx.fillRect(width / 2 - 50, height / 2 - 100, 100, 200); // Body
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2 - 120, 40, 0, Math.PI * 2); // Head
-            ctx.fill();
-            
-            ctx.fillStyle = '#f5a623';
-            ctx.font = "bold 30px 'Rye', 'Impact', sans-serif";
-            ctx.fillText("[Cowboy walking away placeholder]", width / 2, height / 2 + 140);
+        // Draw the 4 Cowboys
+        const groundY = height / 2 + 100;
+        
+        // Draw a simple ground line
+        ctx.fillStyle = '#3d2314';
+        ctx.fillRect(0, groundY, width, height - groundY);
+        ctx.fillStyle = '#5c3a21';
+        ctx.fillRect(0, groundY, width, 20);
 
-            ctx.fillStyle = 'white';
-            ctx.font = "bold 60px 'Rye', 'Impact', sans-serif";
-            ctx.fillText("WAIT FOR IT...", width / 2, height / 2 - 200);
+        for (let i = 0; i < 4; i++) {
+            const px = width / 8 + i * (width / 4);
+            const py = groundY - 100; // Character base near ground
             
-            // Show false starts
-            ctx.font = "bold 30px 'Rye', sans-serif";
-            for (let i = 0; i < 4; i++) {
+            // Draw player color platform
+            ctx.fillStyle = colors[i];
+            ctx.beginPath();
+            ctx.ellipse(px, groundY, 80, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw crosshair target above
+            if (this.images.crosshair && this.images.crosshair.complete) {
+                const cw = this.images.crosshair.width;
+                const ch = this.images.crosshair.height;
+                ctx.drawImage(this.images.crosshair, px - cw / 2, py - 350, cw, ch);
+            }
+
+            // Which image to draw?
+            let currentImg = this.images.back;
+            let showRifle = false;
+            let showShot = false;
+
+            if (this.state === 'WAITING') {
                 if (this.falseStarts[i]) {
-                    ctx.fillStyle = 'red';
-                    ctx.fillText(`Player ${i+1} FALSE START!`, width / 4 * i + width / 8, height - 120);
+                    currentImg = this.images.hurt; // They messed up
+                } else {
+                    currentImg = this.images.back;
+                }
+            } else if (this.state === 'DRAW') {
+                currentImg = this.images.stand;
+            } else if (this.state === 'ROUND_OVER') {
+                if (i === this.winnerIndex) {
+                    currentImg = this.images.cheer;
+                } else {
+                    currentImg = this.images.hurt;
                 }
             }
+            
+            if (this.shotTimers && this.shotTimers[i] >= 0) {
+                showRifle = true;
+                if (this.shotTimers[i] < 10) showShot = true; // muzzle flash for first 10 frames
+            }
+
+            // Draw character (scale up)
+            if (currentImg && currentImg.complete) {
+                const imgW = currentImg.width * 2;
+                const imgH = currentImg.height * 2;
+                ctx.drawImage(currentImg, px - imgW / 2, py - imgH + 50, imgW, imgH);
+            }
+
+            // Draw Rifle and Shot
+            if (showRifle && this.images.rifle && this.images.rifle.complete) {
+                const rw = this.images.rifle.width;
+                const rh = this.images.rifle.height;
+                // Position rifle in hand (lowered to py - 10)
+                ctx.drawImage(this.images.rifle, px + 20, py - 10, rw, rh);
+                
+                if (showShot && this.images.shot && this.images.shot.complete) {
+                    const sw = this.images.shot.width;
+                    const sh = this.images.shot.height;
+                    ctx.drawImage(this.images.shot, px + 20 + rw, py - 10 - sh/2 + rh/2, sw, sh);
+                }
+            }
+            
+            // Draw bullet flying
+            if (this.shotTimers && this.shotTimers[i] >= 0) {
+                let bulletY = (py - 10) - (this.shotTimers[i] * 30);
+                let targetY = py - 350 + (this.images.crosshair ? this.images.crosshair.height/2 : 0);
+                
+                if (i === this.winnerIndex) {
+                    if (bulletY <= targetY) {
+                        bulletY = targetY;
+                        // Draw hit explosion on crosshair
+                        if (this.images.shot && this.images.shot.complete) {
+                            ctx.drawImage(this.images.shot, px - this.images.shot.width/2, targetY - this.images.shot.height/2);
+                        }
+                    } else if (this.images.bulletWinner && this.images.bulletWinner.complete) {
+                        ctx.drawImage(this.images.bulletWinner, px - this.images.bulletWinner.width/2, bulletY);
+                    }
+                } else {
+                    if (this.images.bulletLoser && this.images.bulletLoser.complete) {
+                        ctx.drawImage(this.images.bulletLoser, px - this.images.bulletLoser.width/2 + 20, bulletY); // Offset slightly
+                    }
+                    if (bulletY < targetY - 20) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.font = "bold 20px 'Rye', sans-serif";
+                        ctx.fillText("MISS", px + 40, targetY);
+                    }
+                }
+            }
+            
+            if (this.state === 'WAITING' && this.falseStarts[i]) {
+                ctx.fillStyle = 'red';
+                ctx.font = "bold 30px 'Rye', sans-serif";
+                ctx.fillText("FALSE START!", px, py - 150);
+            }
+        }
+
+        // Top Status Text
+        if (this.state === 'WAITING') {
+            ctx.fillStyle = 'white';
+            ctx.font = "bold 80px 'Rye', 'Impact', sans-serif";
+            ctx.fillText("WAIT FOR IT...", width / 2, 120);
         } else if (this.state === 'DRAW') {
-            // Draw placeholder cowboy facing and shooting
-            ctx.fillStyle = '#ff6b6b'; // Brighter silhouette
-            ctx.fillRect(width / 2 - 60, height / 2 - 100, 120, 200); // Body
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2 - 120, 40, 0, Math.PI * 2); // Head
-            ctx.fill();
-            // Add a gun shape
-            ctx.fillStyle = '#333';
-            ctx.fillRect(width / 2 + 60, height / 2 - 20, 60, 20); // Gun
-
-            ctx.fillStyle = '#fff';
-            ctx.font = "bold 30px 'Rye', 'Impact', sans-serif";
-            ctx.fillText("[Cowboy turns and draws placeholder]", width / 2, height / 2 + 140);
-
             ctx.fillStyle = '#ff3333';
-            ctx.font = "bold 120px 'Rye', 'Impact', sans-serif";
-            ctx.fillText("DRAW!", width / 2, height / 2 - 200);
+            ctx.font = "bold 150px 'Rye', 'Impact', sans-serif";
+            ctx.fillText("DRAW!", width / 2, 150);
         } else if (this.state === 'ROUND_OVER') {
             ctx.fillStyle = 'yellow';
             ctx.font = "bold 80px 'Rye', 'Impact', sans-serif";
-            ctx.fillText(`PLAYER ${this.winnerIndex + 1} WINS ROUND!`, width / 2, height / 2);
+            ctx.fillText(`PLAYER ${this.winnerIndex + 1} WINS ROUND!`, width / 2, 120);
         }
 
         // Draw current scores at bottom
-        ctx.font = "bold 30px 'Rye', sans-serif";
-        const colors = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
+        ctx.font = "bold 40px 'Rye', sans-serif";
         for (let i = 0; i < 4; i++) {
             ctx.fillStyle = colors[i];
             ctx.fillText(`P${i+1}: ${this.scores[i]}`, width / 4 * i + width / 8, height - 50);

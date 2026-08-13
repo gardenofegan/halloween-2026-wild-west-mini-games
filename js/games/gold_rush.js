@@ -4,8 +4,17 @@ const goldRush = {
     scores: [0, 0, 0, 0],
     
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.gold) {
+            this.images.gold = new Image();
+            this.images.gold.src = 'assets/images/platformer/Base pack/Items/coinGold.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
     },
@@ -69,9 +78,19 @@ const goldRush = {
             const goldHeight = cartHeight * fillPercentage;
             
             if (goldHeight > 0) {
-                ctx.fillStyle = '#ffd700'; // Gold color
-                // Draw gold filling from bottom of cart
-                ctx.fillRect(x - cartWidth / 2.5 + 5, startY - goldHeight, cartWidth * 0.8 - 10, goldHeight);
+                if (this.images.gold && this.images.gold.complete) {
+                    const numCoins = Math.min(this.scores[i], 100); 
+                    for(let c = 0; c < numCoins; c++) {
+                        // pseudo random positions based on coin index
+                        const cx = (x - cartWidth / 2.5 + 10) + ((c * 17) % (cartWidth * 0.8 - 40));
+                        const cy = startY - 20 - ((c * 13) % (goldHeight - 10)); // stacked up
+                        ctx.drawImage(this.images.gold, cx, cy, 30, 30);
+                    }
+                } else {
+                    ctx.fillStyle = '#ffd700'; // Gold color
+                    // Draw gold filling from bottom of cart
+                    ctx.fillRect(x - cartWidth / 2.5 + 5, startY - goldHeight, cartWidth * 0.8 - 10, goldHeight);
+                }
             }
 
             // Draw player color outline

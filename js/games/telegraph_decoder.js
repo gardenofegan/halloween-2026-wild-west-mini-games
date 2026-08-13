@@ -24,8 +24,19 @@ const telegraphDecoder = {
     level: 3, // Start with sequence of 3
 
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.lightOn) {
+            this.images.lightOn = new Image();
+            this.images.lightOn.src = 'assets/images/ui-pack/PNG/buttonRound_beige.png';
+            this.images.lightOff = new Image();
+            this.images.lightOff.src = 'assets/images/ui-pack/PNG/buttonRound_grey.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         this.level = 3;
@@ -161,13 +172,18 @@ const telegraphDecoder = {
             ctx.fillText("MEMORIZE THE SIGNAL...", width / 2, 120);
 
             // Draw central light
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2 - 50, 80, 0, Math.PI * 2);
-            ctx.fillStyle = this.isSignalOn ? '#f1c40f' : '#222';
-            ctx.fill();
-            ctx.lineWidth = 10;
-            ctx.strokeStyle = '#111';
-            ctx.stroke();
+            const lightImg = this.isSignalOn ? this.images.lightOn : this.images.lightOff;
+            if (lightImg && lightImg.complete) {
+                ctx.drawImage(lightImg, width / 2 - 80, height / 2 - 130, 160, 160);
+            } else {
+                ctx.beginPath();
+                ctx.arc(width / 2, height / 2 - 50, 80, 0, Math.PI * 2);
+                ctx.fillStyle = this.isSignalOn ? '#f1c40f' : '#222';
+                ctx.fill();
+                ctx.lineWidth = 10;
+                ctx.strokeStyle = '#111';
+                ctx.stroke();
+            }
 
             if (this.isSignalOn) {
                 // Glow

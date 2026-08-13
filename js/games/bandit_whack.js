@@ -20,8 +20,17 @@ const banditWhack = {
     spawnRate: 60, // frames between spawns
 
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.crate) {
+            this.images.crate = new Image();
+            this.images.crate.src = 'assets/images/sokoban/PNG/Default size/Crates/crate_01.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         this.bandits = [null, null, null, null, null, null];
@@ -221,12 +230,16 @@ const banditWhack = {
             }
 
             // Draw Barrel front (to cover bandit lower half)
-            ctx.fillStyle = '#5c3a21'; // Lighter brown
-            ctx.fillRect(pos.x - 90, pos.y + 40, 180, 90);
-            // Barrel bands
-            ctx.fillStyle = '#222';
-            ctx.fillRect(pos.x - 90, pos.y + 60, 180, 10);
-            ctx.fillRect(pos.x - 90, pos.y + 110, 180, 10);
+            if (this.images.crate && this.images.crate.complete) {
+                ctx.drawImage(this.images.crate, pos.x - 90, pos.y + 10, 180, 180);
+            } else {
+                ctx.fillStyle = '#5c3a21'; // Lighter brown
+                ctx.fillRect(pos.x - 90, pos.y + 40, 180, 90);
+                // Barrel bands
+                ctx.fillStyle = '#222';
+                ctx.fillRect(pos.x - 90, pos.y + 60, 180, 10);
+                ctx.fillRect(pos.x - 90, pos.y + 110, 180, 10);
+            }
         }
     }
 };

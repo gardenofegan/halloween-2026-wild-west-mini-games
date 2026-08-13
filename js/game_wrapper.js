@@ -1,6 +1,14 @@
 // js/game_wrapper.js
 const gameStateWrapper = { timer: 3600, state: 'CHECK_IN', checkInTimer: 300, scoreBoardTimer: 600, activeGame: null, activePlayers: [false, false, false, false], prevInput: null };
 
+const wrapperAssets = { panel: null, medal1: null, medal2: null, medal3: null };
+if (typeof window !== 'undefined') {
+    wrapperAssets.panel = new Image(); wrapperAssets.panel.src = 'assets/images/ui-pack/PNG/panel_brown.png';
+    wrapperAssets.medal1 = new Image(); wrapperAssets.medal1.src = 'assets/images/medals/PNG/flat_medal1.png';
+    wrapperAssets.medal2 = new Image(); wrapperAssets.medal2.src = 'assets/images/medals/PNG/flat_medal2.png';
+    wrapperAssets.medal3 = new Image(); wrapperAssets.medal3.src = 'assets/images/medals/PNG/flat_medal3.png';
+}
+
 function resetGameWrapper(gameIndex) {
     gameStateWrapper.timer = 3600;
     gameStateWrapper.state = 'CHECK_IN';
@@ -135,17 +143,47 @@ function drawGameWrapper(ctx, width, height) {
     if (gameStateWrapper.state === 'SCOREBOARD') {
         ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
         ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = "white";
+        
+        const bw = 800;
+        const bh = 600;
+        const bx = width / 2 - bw / 2;
+        const by = height / 2 - bh / 2;
+        
+        if (wrapperAssets.panel && wrapperAssets.panel.complete) {
+            ctx.drawImage(wrapperAssets.panel, bx, by, bw, bh);
+        } else {
+            ctx.fillStyle = "#3d2314";
+            ctx.fillRect(bx, by, bw, bh);
+        }
+
+        ctx.fillStyle = "#fff8dc";
         ctx.textAlign = "center";
         ctx.font = "bold 60px 'Rye', 'Impact', sans-serif";
-        ctx.fillText("TIME'S UP! SCOREBOARD:", width / 2, height / 2 - 100);
+        ctx.fillText("SCOREBOARD", width / 2, by + 100);
 
         if (gameStateWrapper.activeGame && gameStateWrapper.activeGame.scores) {
             const scores = gameStateWrapper.activeGame.scores;
+            // Rank them (sort by score descending)
+            const ranked = scores.map((s, i) => ({ score: s, id: i })).sort((a,b) => b.score - a.score);
+            
             const colors = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db']; // Red, Green, Yellow, Blue
             for (let i = 0; i < 4; i++) {
-                ctx.fillStyle = colors[i];
-                ctx.fillText(`Player ${i + 1}: ${scores[i]}`, width / 2, height / 2 + (i * 60));
+                const player = ranked[i];
+                ctx.fillStyle = colors[player.id];
+                ctx.textAlign = "left";
+                ctx.font = "bold 50px 'Rye', sans-serif";
+                let y = by + 220 + (i * 90);
+                
+                ctx.fillText(`Player ${player.id + 1}: ${player.score}`, width / 2 - 120, y);
+                
+                // Draw medals for 1st, 2nd, 3rd (only if they scored)
+                if (i === 0 && wrapperAssets.medal1 && wrapperAssets.medal1.complete && player.score > 0) {
+                    ctx.drawImage(wrapperAssets.medal1, width / 2 - 220, y - 50, 70, 70);
+                } else if (i === 1 && wrapperAssets.medal2 && wrapperAssets.medal2.complete && player.score > 0) {
+                    ctx.drawImage(wrapperAssets.medal2, width / 2 - 220, y - 50, 70, 70);
+                } else if (i === 2 && wrapperAssets.medal3 && wrapperAssets.medal3.complete && player.score > 0) {
+                    ctx.drawImage(wrapperAssets.medal3, width / 2 - 220, y - 50, 70, 70);
+                }
             }
         }
     } else if (gameStateWrapper.state === 'PLAYING') {

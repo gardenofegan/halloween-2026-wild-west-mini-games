@@ -16,8 +16,17 @@ const horseRace = {
     ],
 
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.horse) {
+            this.images.horse = new Image();
+            this.images.horse.src = 'assets/images/animals/PNG/Round/horse.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         this.beatTimer = this.beatInterval;
@@ -153,31 +162,18 @@ const horseRace = {
             if (p.stumbleTimer > 0) {
                 // Stumbling
                 ctx.rotate(Math.PI / 4); // Tilt forward
-                ctx.fillStyle = p.color;
-                ctx.fillRect(-40, -60, 80, 40); // Body
+                if (this.images.horse && this.images.horse.complete) {
+                    ctx.drawImage(this.images.horse, -this.images.horse.width/2, -this.images.horse.height/2);
+                }
                 ctx.fillStyle = '#fff';
                 ctx.font = "bold 20px 'Rye', sans-serif";
                 ctx.fillText("STUMBLE!", 0, -80);
             } else {
-                // Running (animate legs based on beatTimer if we want, or just static)
+                // Running
                 let gallopOffset = isOnBeat ? -10 : 0;
                 ctx.translate(0, gallopOffset);
-                
-                ctx.fillStyle = p.color;
-                // Simple Horse shape
-                ctx.fillRect(-50, -80, 80, 50); // Body
-                ctx.fillRect(10, -110, 30, 40); // Head/Neck
-                
-                // Legs
-                ctx.fillStyle = '#222';
-                if (gallopOffset < 0) {
-                    // Stretched legs
-                    ctx.fillRect(-60, -30, 10, 30);
-                    ctx.fillRect(20, -30, 10, 30);
-                } else {
-                    // Standing legs
-                    ctx.fillRect(-40, -30, 10, 30);
-                    ctx.fillRect(10, -30, 10, 30);
+                if (this.images.horse && this.images.horse.complete) {
+                    ctx.drawImage(this.images.horse, -this.images.horse.width/2, -this.images.horse.height/2);
                 }
             }
             

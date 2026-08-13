@@ -9,8 +9,17 @@ const snakeBite = {
     winnerIndex: -1,
     
     prevInput: null,
+    images: {},
+
+    loadImages: function() {
+        if (typeof Image !== 'undefined' && !this.images.snake) {
+            this.images.snake = new Image();
+            this.images.snake.src = 'assets/images/animals/PNG/Round/snake.png';
+        }
+    },
 
     reset: function() {
+        this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         this.startNewRound();
@@ -101,39 +110,14 @@ const snakeBite = {
             ctx.save();
             ctx.translate(width / 2, height / 2 + 50);
             
-            // Coil body
-            ctx.fillStyle = '#6b8e23'; // Olive green
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 120, 40, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(0, -30, 90, 30, 0, 0, Math.PI * 2);
-            ctx.fill();
+            const shake = (Math.floor(Date.now() / 30) % 2 === 0) ? 5 : -5;
+            ctx.translate(shake, 0);
 
-            // Head (looking calm)
-            ctx.beginPath();
-            ctx.arc(-40, -80, 40, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(-55, -90, 5, 0, Math.PI * 2); // Eye
-            ctx.fill();
-            
-            // Rattle tail vibrating
-            const shake = (Math.floor(Date.now() / 30) % 2 === 0) ? 10 : -10;
-            ctx.fillStyle = '#d4a359';
-            ctx.beginPath();
-            ctx.ellipse(80 + shake, -20, 20, 10, Math.PI/4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Rattle lines
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(70 + shake, -25); ctx.lineTo(90 + shake, -5);
-            ctx.moveTo(80 + shake, -30); ctx.lineTo(100 + shake, -10);
-            ctx.stroke();
-
+            if (this.images.snake && this.images.snake.complete) {
+                const w = this.images.snake.width * 2;
+                const h = this.images.snake.height * 2;
+                ctx.drawImage(this.images.snake, -w/2, -h/2, w, h);
+            }
             ctx.restore();
 
         } else if (this.state === 'STRIKING') {
@@ -145,42 +129,12 @@ const snakeBite = {
             ctx.save();
             ctx.translate(width / 2, height / 2 + 50);
             
-            // Coil body (smaller, uncoiled)
-            ctx.fillStyle = '#6b8e23';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 80, 20, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Long stretched neck
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(-150, -150);
-            ctx.lineWidth = 40;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = '#6b8e23';
-            ctx.stroke();
-
-            // Huge open mouth head
-            ctx.translate(-150, -150);
-            ctx.fillStyle = '#6b8e23';
-            ctx.beginPath();
-            ctx.arc(0, 0, 50, Math.PI * 1.2, Math.PI * 0.8, true);
-            ctx.fill();
-
-            // Fangs
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.moveTo(-40, -10);
-            ctx.lineTo(-45, 30);
-            ctx.lineTo(-20, -10);
-            ctx.fill();
-
-            // Angry Eye
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(-10, -20, 10, 0, Math.PI * 2);
-            ctx.fill();
-
+            if (this.images.snake && this.images.snake.complete) {
+                // Make it huge and slightly moved up
+                const w = this.images.snake.width * 6;
+                const h = this.images.snake.height * 6;
+                ctx.drawImage(this.images.snake, -w/2, -h/2 - 100, w, h);
+            }
             ctx.restore();
 
         } else if (this.state === 'ROUND_OVER') {
