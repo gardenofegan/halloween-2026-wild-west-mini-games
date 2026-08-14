@@ -3,21 +3,35 @@ const lassoCatch = {
     name: 'Lasso Catch',
     scores: [0, 0, 0, 0],
     
-    // Each player has a target moving back and forth
-    targets: [
-        { x: 0, speed: 5, direction: 1, cooldown: 0 },
-        { x: 0, speed: 6, direction: 1, cooldown: 0 },
-        { x: 0, speed: 7, direction: 1, cooldown: 0 },
-        { x: 0, speed: 4, direction: 1, cooldown: 0 }
+    // Each player has multiple targets (cows) in their lane
+    lanes: [ [], [], [], [] ],
+    playerStates: [
+        { cooldown: 0, status: '' },
+        { cooldown: 0, status: '' },
+        { cooldown: 0, status: '' },
+        { cooldown: 0, status: '' }
     ],
 
     prevInput: null,
     images: {},
 
     loadImages: function() {
-        if (typeof Image !== 'undefined' && !this.images.cow) {
-            this.images.cow = new Image();
-            this.images.cow.src = 'assets/images/animals/PNG/Round/cow.png';
+        if (typeof Image !== 'undefined' && !this.images.cows) {
+            this.images.cows = [];
+            const cowFiles = [
+                'cows_spritesheet_black0.png',
+                'cows_spritesheet_black1.png',
+                'cows_spritesheet_brown.png',
+                'cows_spritesheet_white0.png',
+                'cows_spritesheet_white1.png',
+                'cows_spritesheet_white_darkspots.png',
+                'cows_spritesheet_white_pinkspots.png'
+            ];
+            for (let file of cowFiles) {
+                let img = new Image();
+                img.src = `assets/images/Cows/Cows/${file}`;
+                this.images.cows.push(img);
+            }
         }
     },
 
@@ -26,17 +40,36 @@ const lassoCatch = {
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         for (let i = 0; i < 4; i++) {
-            this.resetTarget(i);
+            this.playerStates[i] = { cooldown: 0, status: '' };
+            this.lanes[i] = [];
+            for (let j = 0; j < 4; j++) {
+                // Space them out initially so they aren't all clumped
+                const startLeft = Math.random() > 0.5;
+                const xPos = startLeft ? -200 - Math.random() * 1000 : 2120 + Math.random() * 1000;
+                this.lanes[i].push(this.createCow(xPos));
+            }
         }
     },
 
-    resetTarget: function(index) {
-        // Start randomly on left or right
+    createCow: function(startX) {
         const startLeft = Math.random() > 0.5;
-        this.targets[index].x = startLeft ? -200 : 2120; // Offscreen based on 1920 width
-        this.targets[index].direction = startLeft ? 1 : -1;
-        this.targets[index].speed = Math.random() * 8 + 6; // Random speed between 6 and 14
-        this.targets[index].cooldown = 0;
+        return {
+            x: startX !== undefined ? startX : (startLeft ? -200 : 2120),
+            direction: startLeft ? 1 : -1,
+            speed: Math.random() * 3 + 5, // 5 to 8 (much more manageable speed)
+            cooldown: 0,
+            cowIndex: Math.floor(Math.random() * 7),
+            animTimer: Math.random() * 4
+        };
+    },
+
+    resetTarget: function(target) {
+        const newCow = this.createCow();
+        target.x = newCow.x;
+        target.direction = newCow.direction;
+        target.speed = newCow.speed;
+        target.cooldown = newCow.cooldown;
+        target.cowIndex = newCow.cowIndex;
     },
 
     update: function(input, activePlayers) {
@@ -51,43 +84,56 @@ const lassoCatch = {
             return input.players[playerIndex][btn] && !this.prevInput.players[playerIndex][btn];
         };
 
-        const width = 1920; // Base canvas width
+        const width = 1920;
         const targetZoneCenter = width / 2;
         const targetZoneWidth = 120;
 
         for (let i = 0; i < 4; i++) {
             if (activePlayers && activePlayers[i]) {
-                const target = this.targets[i];
+                const lane = this.lanes[i];
+                let throwActive = isPressed(i, 'red');
+                let caughtAny = false;
 
-                if (target.cooldown > 0) {
-                    target.cooldown--;
-                    if (target.cooldown <= 0) {
-                        this.resetTarget(i);
+                if (this.playerStates[i].cooldown > 0) {
+                    this.playerStates[i].cooldown--;
+                }
+
+                if (throwActive && this.playerStates[i].cooldown <= 0) {
+                    for (let j = 0; j < lane.length; j++) {
+                        const target = lane[j];
+                        if (target.cooldown <= 0) {
+                            const dist = Math.abs(target.x - targetZoneCenter);
+                            if (dist < targetZoneWidth / 2) {
+                                this.scores[i] += 1;
+                                target.cooldown = 30; // Cow stays caught for a bit
+                                caughtAny = true;
+                                this.playerStates[i].status = 'CAUGHT!';
+                                this.playerStates[i].cooldown = 5; // Very small cooldown so they can catch back-to-back cows
+                                break; // Only catch one cow per throw
+                            }
+                        }
                     }
-                } else {
-                    // Move target
-                    target.x += target.speed * target.direction;
-
-                    // Bounce off edges (or wrap around, but bouncing is fun)
-                    if (target.x < -100) {
-                        target.direction = 1;
-                        target.x = -100;
-                    } else if (target.x > width + 100) {
-                        target.direction = -1;
-                        target.x = width + 100;
+                    if (!caughtAny) {
+                        this.playerStates[i].status = 'MISSED!';
+                        this.playerStates[i].cooldown = 15; // Small penalty for missing
                     }
+                }
 
-                    // Check for throw
-                    if (isPressed(i, 'red')) {
-                        // Did they catch it?
-                        const dist = Math.abs(target.x - targetZoneCenter);
-                        if (dist < targetZoneWidth / 2) {
-                            // Caught!
-                            this.scores[i] += 1;
-                            target.cooldown = 60; // Wait 1 second before respawning
-                        } else {
-                            // Missed! Penalty delay
-                            target.cooldown = 30; // Stunned/Miss animation state
+                for (let j = 0; j < lane.length; j++) {
+                    const target = lane[j];
+                    if (target.cooldown > 0) {
+                        target.cooldown--;
+                        if (target.cooldown <= 0) {
+                            this.resetTarget(target);
+                        }
+                    } else {
+                        target.x += target.speed * target.direction;
+                        target.animTimer += target.speed * 0.02;
+
+                        if (target.direction === 1 && target.x > width + 200) {
+                            this.resetTarget(target);
+                        } else if (target.direction === -1 && target.x < -200) {
+                            this.resetTarget(target);
                         }
                     }
                 }
@@ -142,70 +188,71 @@ const lassoCatch = {
             ctx.font = "bold 40px 'Rye', sans-serif";
             ctx.fillText(`P${i+1} SCORE: ${this.scores[i]}`, 20, laneY + 120);
 
-            const target = this.targets[i];
-            
-            // Draw the cow/target
-            ctx.save();
-            ctx.translate(target.x, laneY + laneHeight / 2);
-            
-            if (target.cooldown > 0) {
-                // If cooldown > 30, it was a catch. If <= 30, it was a miss.
-                // But we don't strictly know if it was a catch or miss just from cooldown,
-                // let's assume if it's perfectly in center, it was a catch.
-                const dist = Math.abs(target.x - targetZoneCenter);
-                if (dist < targetZoneWidth / 2) {
-                    // Caught
-                    ctx.fillStyle = '#2ecc71'; // Green
-                    ctx.font = "bold 30px 'Rye', sans-serif";
-                    ctx.textAlign = 'center';
-                    ctx.fillText("CAUGHT!", 0, -40);
-                    
-                    // Draw Lasso circle
+            // Draw player status
+            const pState = this.playerStates[i];
+            if (pState && pState.cooldown > 0) {
+                ctx.textAlign = 'center';
+                ctx.fillStyle = pState.status === 'CAUGHT!' ? '#2ecc71' : '#e74c3c';
+                ctx.font = "bold 40px 'Rye', sans-serif";
+                ctx.fillText(pState.status, targetZoneCenter, laneY + laneHeight / 2 - 60);
+                
+                if (pState.status === 'CAUGHT!') {
                     ctx.strokeStyle = '#d4a359';
                     ctx.lineWidth = 6;
                     ctx.beginPath();
-                    ctx.ellipse(0, 0, 50, 30, 0, 0, Math.PI * 2);
+                    ctx.ellipse(targetZoneCenter, laneY + laneHeight / 2, 50, 30, 0, 0, Math.PI * 2);
                     ctx.stroke();
-                } else {
-                    // Missed
-                    ctx.fillStyle = '#e74c3c'; // Red
-                    ctx.font = "bold 30px 'Rye', sans-serif";
-                    ctx.textAlign = 'center';
-                    ctx.fillText("MISSED!", 0, -40);
                 }
             }
-            
-            // Draw Cow Body
-            if (this.images.cow && this.images.cow.complete) {
-                const w = this.images.cow.width;
-                const h = this.images.cow.height;
-                ctx.save();
-                if (target.direction === -1) {
-                    ctx.scale(-1, 1);
-                }
-                ctx.drawImage(this.images.cow, -w/2, -h/2, w, h);
-                ctx.restore();
-            } else {
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(-30, -20, 60, 40);
-                ctx.fillStyle = '#000';
-                ctx.fillRect(-20, -10, 20, 20); // Cow spots
-                ctx.fillRect(10, 0, 15, 15);
-                
-                // Draw Cow Head based on direction
-                ctx.fillStyle = '#fff';
-                if (target.direction === 1) {
-                    ctx.fillRect(20, -30, 30, 30);
-                    ctx.fillStyle = '#000';
-                    ctx.fillRect(40, -25, 5, 5); // Eye
-                } else {
-                    ctx.fillRect(-50, -30, 30, 30);
-                    ctx.fillStyle = '#000';
-                    ctx.fillRect(-45, -25, 5, 5); // Eye
+
+            const laneCows = this.lanes[i];
+            if (laneCows) {
+                for (let j = 0; j < laneCows.length; j++) {
+                    const target = laneCows[j];
+                    
+                    ctx.save();
+                    ctx.translate(target.x, laneY + laneHeight / 2);
+                    
+                    if (this.images.cows && this.images.cows[target.cowIndex] && this.images.cows[target.cowIndex].complete) {
+                        const cowImg = this.images.cows[target.cowIndex];
+                        const frameW = 32;
+                        const frameH = cowImg.height >= 256 ? 32 : cowImg.height; 
+                        const scale = 3;
+                        
+                        if (target.direction === -1) {
+                            ctx.scale(-1, 1);
+                        }
+                        
+                        // Use row 4 (y=128) which has 4 full frames of walking animation
+                        const frameY = 128; 
+                        let frameX = 0;
+                        if (target.cooldown <= 0) {
+                            // Use all 4 frames linearly
+                            frameX = Math.floor(target.animTimer) % 4;
+                        }
+                        
+                        ctx.drawImage(cowImg, frameX * frameW, frameY, frameW, frameH, -frameW * scale / 2, -frameH * scale / 2, frameW * scale, frameH * scale);
+                    } else {
+                        // Fallback Cow
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(-30, -20, 60, 40);
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(-20, -10, 20, 20); 
+                        ctx.fillRect(10, 0, 15, 15);
+                        ctx.fillStyle = '#fff';
+                        if (target.direction === 1) {
+                            ctx.fillRect(20, -30, 30, 30);
+                            ctx.fillStyle = '#000';
+                            ctx.fillRect(40, -25, 5, 5);
+                        } else {
+                            ctx.fillRect(-50, -30, 30, 30);
+                            ctx.fillStyle = '#000';
+                            ctx.fillRect(-45, -25, 5, 5);
+                        }
+                    }
+                    ctx.restore();
                 }
             }
-            
-            ctx.restore();
         }
     }
 };

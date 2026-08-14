@@ -1,5 +1,5 @@
 // js/game_wrapper.js
-const gameStateWrapper = { timer: 3600, state: 'CHECK_IN', checkInTimer: 300, scoreBoardTimer: 600, activeGame: null, activePlayers: [false, false, false, false], prevInput: null };
+const gameStateWrapper = { timer: 1800, state: 'CHECK_IN', checkInTimer: 300, scoreBoardTimer: 600, activeGame: null, activePlayers: [false, false, false, false], prevInput: null };
 
 const wrapperAssets = { panel: null, medal1: null, medal2: null, medal3: null };
 if (typeof window !== 'undefined') {
@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 function resetGameWrapper(gameIndex) {
-    gameStateWrapper.timer = 3600;
+    gameStateWrapper.timer = 1800;
     gameStateWrapper.state = 'CHECK_IN';
     gameStateWrapper.checkInTimer = 300; // 5 seconds
     gameStateWrapper.scoreBoardTimer = 600;

@@ -135,6 +135,14 @@ const quickDraw = {
         ctx.fillRect(0, groundY, width, 20);
 
         for (let i = 0; i < 4; i++) {
+            if (this.state === 'ROUND_OVER' && this.winnerIndex !== -1 && i !== this.winnerIndex) {
+                ctx.filter = 'grayscale(80%)';
+                ctx.globalAlpha = 0.8;
+            } else {
+                ctx.filter = 'none';
+                ctx.globalAlpha = 1.0;
+            }
+            
             const px = width / 8 + i * (width / 4);
             const py = groundY - 100; // Character base near ground
             
@@ -218,9 +226,14 @@ const quickDraw = {
                         ctx.drawImage(this.images.bulletLoser, px - this.images.bulletLoser.width/2 + 20, bulletY); // Offset slightly
                     }
                     if (bulletY < targetY - 20) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                        ctx.font = "bold 20px 'Rye', sans-serif";
-                        ctx.fillText("MISS", px + 40, targetY);
+                        ctx.filter = 'none';
+                        ctx.globalAlpha = 1.0;
+                        ctx.fillStyle = 'white';
+                        ctx.strokeStyle = 'black';
+                        ctx.lineWidth = 4;
+                        ctx.font = "bold 50px 'Rye', sans-serif";
+                        ctx.strokeText("MISS", px, targetY);
+                        ctx.fillText("MISS", px, targetY);
                     }
                 }
             }
@@ -230,6 +243,8 @@ const quickDraw = {
                 ctx.font = "bold 30px 'Rye', sans-serif";
                 ctx.fillText("FALSE START!", px, py - 150);
             }
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1.0;
         }
 
         // Top Status Text

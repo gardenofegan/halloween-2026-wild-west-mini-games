@@ -15,8 +15,8 @@ for (let i = 0; i < 300; i++) {
 }
 assert.strictEqual(gameStateWrapper.state, 'PLAYING', 'State should transition from CHECK_IN to PLAYING');
 
-// Simulate 60 seconds passing at 60fps (3600 frames)
-for (let i = 0; i < 3600; i++) {
+// Simulate 30 seconds passing at 60fps (1800 frames)
+for (let i = 0; i < 1800; i++) {
     updateGame(mockInput);
 }
 

@@ -3,25 +3,34 @@ const horseRace = {
     name: 'Horse Race',
     scores: [0, 0, 0, 0],
     
-    // Rhythm mechanics
-    beatInterval: 40, // 90 BPM at 60fps
-    beatTimer: 40,
-    tolerance: 8, // +/- frames for a successful hit
+    // Each player has multiple targets (cows) in their lane
+    hurdles: [],
+    spawnInterval: 80,
+    spawnTimer: 40,
+    globalAnimTimer: 0,
+    maxScore: 300,
+    startX: 150,
 
     players: [
-        { stumbleTimer: 0, hasHitThisBeat: false, color: '#e74c3c' },
-        { stumbleTimer: 0, hasHitThisBeat: false, color: '#2ecc71' },
-        { stumbleTimer: 0, hasHitThisBeat: false, color: '#f1c40f' },
-        { stumbleTimer: 0, hasHitThisBeat: false, color: '#3498db' }
+        { stumbleTimer: 0, jumpTimer: 0 },
+        { stumbleTimer: 0, jumpTimer: 0 },
+        { stumbleTimer: 0, jumpTimer: 0 },
+        { stumbleTimer: 0, jumpTimer: 0 }
     ],
 
     prevInput: null,
     images: {},
 
     loadImages: function() {
-        if (typeof Image !== 'undefined' && !this.images.horse) {
-            this.images.horse = new Image();
-            this.images.horse.src = 'assets/images/animals/PNG/Round/horse.png';
+        if (typeof Image !== 'undefined' && !this.images.horses) {
+            this.images.horses = [];
+            // Load distinct horse sprites from the 8 available
+            const horseIndices = [1, 3, 5, 8];
+            for (let i of horseIndices) {
+                const img = new Image();
+                img.src = `assets/images/Horse Pack/Horse Pack/Horses/${i}.png`;
+                this.images.horses.push(img);
+            }
         }
     },
 
@@ -29,10 +38,14 @@ const horseRace = {
         this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
-        this.beatTimer = this.beatInterval;
+        this.hurdles = [];
+        this.spawnInterval = 80;
+        this.spawnTimer = 40; // First hurdle spawns quickly
+        this.globalAnimTimer = 0;
+
         for (let i = 0; i < 4; i++) {
             this.players[i].stumbleTimer = 0;
-            this.players[i].hasHitThisBeat = false;
+            this.players[i].jumpTimer = 0;
         }
     },
 
@@ -48,44 +61,93 @@ const horseRace = {
             return input.players[playerIndex][btn] && !this.prevInput.players[playerIndex][btn];
         };
 
-        // Advance beat timer
-        this.beatTimer--;
-        let isOnBeat = false;
-        if (this.beatTimer <= 0) {
-            this.beatTimer = this.beatInterval;
-            // Reset "hit this beat" flags for everyone
-            for (let i = 0; i < 4; i++) {
-                this.players[i].hasHitThisBeat = false;
-            }
+        this.globalAnimTimer++;
+
+        // Spawn hurdles
+        this.spawnTimer--;
+        if (this.spawnTimer <= 0) {
+            this.spawnTimer = this.spawnInterval;
+            const colorTypes = ['blue', 'orange', 'green', 'yellow'];
+            const colorIdx = Math.floor(Math.random() * 4);
+            this.hurdles.push({ 
+                x: 1920 + 50, 
+                color: colorTypes[colorIdx], 
+                stringIdx: colorIdx, 
+                hitBy: [false, false, false, false],
+                clearedBy: [false, false, false, false]
+            });
+            // Gradually speed up the spawn rate (cap at 35 frames)
+            if (this.spawnInterval > 35) this.spawnInterval -= 1;
         }
 
-        // Determine if currently within tolerance window
-        if (this.beatTimer <= this.tolerance || this.beatTimer >= this.beatInterval - this.tolerance) {
-            isOnBeat = true;
+        // Move hurdles
+        const hurdleSpeed = 12;
+        for (let h of this.hurdles) {
+            h.x -= hurdleSpeed;
         }
+        
+        // Remove offscreen hurdles
+        if (this.hurdles.length > 0 && this.hurdles[0].x < -100) {
+            this.hurdles.shift();
+        }
+
+        const HIT_TOLERANCE = 50;
+        const width = 1920;
 
         // Process Player Input
         for (let i = 0; i < 4; i++) {
+            if (!activePlayers || !activePlayers[i]) continue;
             let p = this.players[i];
             
-            if (p.stumbleTimer > 0) {
-                p.stumbleTimer--;
-            }
+            // Dynamic Hit Zone: Horse advances right as score goes up
+            let playerX = this.startX + (this.scores[i] / this.maxScore) * (width - 400);
+            if (playerX > width - 200) playerX = width - 200; // Cap to keep on screen
+            
+            if (p.stumbleTimer > 0) p.stumbleTimer--;
+            if (p.jumpTimer > 0) p.jumpTimer--;
+            
+            let pressedColor = null;
+            if (isPressed(i, 'blue')) pressedColor = 'blue';
+            else if (isPressed(i, 'orange')) pressedColor = 'orange';
+            else if (isPressed(i, 'green')) pressedColor = 'green';
+            else if (isPressed(i, 'yellow')) pressedColor = 'yellow';
 
-            if (activePlayers && activePlayers[i]) {
-                if (isPressed(i, 'red')) {
-                    if (p.stumbleTimer > 0) {
-                        // Already stumbling, mashing makes it worse (resets stumble timer)
-                        p.stumbleTimer = 30;
-                    } else if (isOnBeat && !p.hasHitThisBeat) {
-                        // Perfect hit!
-                        this.scores[i] += 10;
-                        p.hasHitThisBeat = true;
-                    } else {
-                        // Missed beat or mashed twice in one window
-                        p.stumbleTimer = 45; // Stumble for 0.75 seconds
-                        p.hasHitThisBeat = true; // Prevent further scoring on this beat if they were early
+            if (pressedColor) {
+                if (p.stumbleTimer > 0) {
+                    // Mashing while stumbling resets penalty
+                    p.stumbleTimer = 20;
+                } else {
+                    let hit = false;
+                    for (let h of this.hurdles) {
+                        if (h.hitBy[i]) continue;
+                        if (Math.abs(h.x - playerX) < HIT_TOLERANCE) {
+                            h.hitBy[i] = true;
+                            if (h.color === pressedColor) {
+                                // Perfect jump
+                                this.scores[i] += 10;
+                                p.jumpTimer = 45; // Jump animation duration
+                                h.clearedBy[i] = true; // Marks it cleared so we don't draw it for this player
+                                hit = true;
+                            } else {
+                                // Wrong button
+                                p.stumbleTimer = 30;
+                                hit = true;
+                            }
+                            break; // Process only the closest hurdle
+                        }
                     }
+                    if (!hit) {
+                        // Pressed button but no hurdle in zone -> early/late penalty
+                        p.stumbleTimer = 20;
+                    }
+                }
+            }
+            
+            // Check for missed hurdles that passed the player
+            for (let h of this.hurdles) {
+                if (!h.hitBy[i] && h.x < playerX - HIT_TOLERANCE) {
+                    h.hitBy[i] = true;
+                    p.stumbleTimer = 30; // Tripped over it
                 }
             }
         }
@@ -98,92 +160,137 @@ const horseRace = {
         
         ctx.fillStyle = '#f5a623';
         ctx.font = "bold 50px 'Rye', 'Impact', sans-serif";
-        ctx.fillText("GALLOP ON THE BEAT!", width / 2, 60);
+        ctx.fillText("JUMP THE COLORED HURDLES!", width / 2, 60);
 
-        // Draw Rhythm Pulse
-        let scale = 1.0;
-        let isOnBeat = (this.beatTimer <= this.tolerance || this.beatTimer >= this.beatInterval - this.tolerance);
-        
-        if (isOnBeat) {
-            scale = 1.3;
-            ctx.fillStyle = '#fff';
-        } else {
-            ctx.fillStyle = '#555';
-            // Slight pulse animation based on distance from beat
-            scale = 1.0 + (1 - (Math.min(this.beatTimer, this.beatInterval - this.beatTimer) / (this.beatInterval / 2))) * 0.1;
-        }
+        const laneHeight = 160;
+        const startY = 120;
 
-        ctx.save();
-        ctx.translate(width / 2, 160);
-        ctx.scale(scale, scale);
-        ctx.beginPath();
-        ctx.arc(0, 0, 40, 0, Math.PI * 2);
-        ctx.fill();
-        
-        if (isOnBeat) {
-            ctx.fillStyle = '#e74c3c';
-            ctx.font = "bold 30px 'Impact', sans-serif";
-            ctx.fillText("BEAT!", 0, 10);
-        }
-        ctx.restore();
-
-        // Draw Race Tracks
-        const trackHeight = 150;
-        const startY = 280;
-        const maxScore = 500; // Target score for full screen width
+        const stringColors = {
+            'blue': '#3498db',
+            'orange': '#e67e22',
+            'green': '#2ecc71',
+            'yellow': '#f1c40f'
+        };
 
         for (let i = 0; i < 4; i++) {
-            let p = this.players[i];
-            let laneY = startY + i * trackHeight;
+            let laneY = startY + i * laneHeight;
 
             // Track background
-            ctx.fillStyle = (i % 2 === 0) ? '#4a2f1d' : '#3d2314';
-            ctx.fillRect(0, laneY, width, trackHeight);
+            ctx.fillStyle = (i % 2 === 0) ? '#2c3e50' : '#34495e';
+            ctx.fillRect(0, laneY, width, laneHeight);
 
-            // Track lines
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([15, 15]);
+            // Draw the 4 guitar strings
+            const stringOffsets = [30, 60, 90, 120];
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.lineWidth = 3;
+            for (let offset of stringOffsets) {
+                ctx.beginPath();
+                ctx.moveTo(0, laneY + offset);
+                ctx.lineTo(width, laneY + offset);
+                ctx.stroke();
+            }
+
+            // Calculate dynamic player X based on score
+            let playerX = this.startX + (this.scores[i] / this.maxScore) * (width - 400);
+            if (playerX > width - 200) playerX = width - 200;
+
+            // Draw Hit Zone line (The "Fret" moves with the horse)
+            ctx.strokeStyle = 'rgba(236, 240, 241, 0.4)'; // Make it slightly transparent so it's not distracting
+            ctx.lineWidth = 6;
             ctx.beginPath();
-            ctx.moveTo(0, laneY + trackHeight);
-            ctx.lineTo(width, laneY + trackHeight);
+            ctx.moveTo(playerX, laneY);
+            ctx.lineTo(playerX, laneY + 150);
             ctx.stroke();
-            ctx.setLineDash([]);
 
-            // Player progress X
-            let progressX = 100 + (this.scores[i] / maxScore) * (width - 250);
-            // Cap visual progress or loop it (looping is better so they don't go off screen)
-            progressX = progressX % (width - 150);
+            // Draw Player Score
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'left';
+            ctx.font = "bold 30px 'Rye', sans-serif";
+            ctx.fillText(`P${i+1}: ${this.scores[i]}`, 20, laneY + 140);
+
+            let p = this.players[i];
+
+            // Draw Hurdles in this lane
+            for (let h of this.hurdles) {
+                // If cleared by this player, we don't draw it (illusion of clearing it)
+                if (h.clearedBy[i]) continue;
+                
+                const hurdleY = laneY + stringOffsets[h.stringIdx];
+                const colorHex = stringColors[h.color];
+                
+                // Draw hurdle pole to the ground
+                ctx.strokeStyle = '#bdc3c7';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(h.x, hurdleY);
+                ctx.lineTo(h.x, laneY + 150); // ground
+                ctx.stroke();
+
+                // Draw the colored block (gem)
+                ctx.fillStyle = colorHex;
+                ctx.fillRect(h.x - 20, hurdleY - 15, 40, 30);
+                
+                // Gem highlight
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(h.x - 15, hurdleY - 10, 30, 10);
+            }
 
             // Draw Horse
-            ctx.save();
-            ctx.translate(progressX, laneY + trackHeight - 20);
-
-            if (p.stumbleTimer > 0) {
-                // Stumbling
-                ctx.rotate(Math.PI / 4); // Tilt forward
-                if (this.images.horse && this.images.horse.complete) {
-                    ctx.drawImage(this.images.horse, -this.images.horse.width/2, -this.images.horse.height/2);
-                }
-                ctx.fillStyle = '#fff';
-                ctx.font = "bold 20px 'Rye', sans-serif";
-                ctx.fillText("STUMBLE!", 0, -80);
-            } else {
-                // Running
-                let gallopOffset = isOnBeat ? -10 : 0;
-                ctx.translate(0, gallopOffset);
-                if (this.images.horse && this.images.horse.complete) {
-                    ctx.drawImage(this.images.horse, -this.images.horse.width/2, -this.images.horse.height/2);
-                }
+            let yOffset = 0;
+            if (p.jumpTimer > 0) {
+                // Parabola jump
+                let t = (22.5 - p.jumpTimer) / 22.5; // -1 to 1 based on 45 max timer
+                yOffset = -(1 - t*t) * 90; // peak at 90 pixels high
             }
-            
-            ctx.restore();
 
-            // Score/Info
-            ctx.fillStyle = p.color;
-            ctx.textAlign = 'left';
-            ctx.font = "bold 40px 'Rye', sans-serif";
-            ctx.fillText(`P${i+1} DISTANCE: ${this.scores[i]}`, 20, laneY + 50);
+            ctx.save();
+            // Horse center (moves across the screen as score increases)
+            ctx.translate(playerX, laneY + 150 + yOffset);
+
+            // Stumble/Fall visual
+            if (p.stumbleTimer > 0) {
+                // Flash transparent
+                if (Math.floor(this.globalAnimTimer / 5) % 2 === 0) {
+                    ctx.globalAlpha = 0.5;
+                }
+                
+                // Draw "MISS" text above the horse
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = "bold 24px 'Impact', sans-serif";
+                ctx.fillText("MISS", 0, -80);
+            }
+
+            // Sprite sheet rendering
+            if (this.images.horses && this.images.horses[i] && this.images.horses[i].complete) {
+                const horseImg = this.images.horses[i];
+                const frameW = 64;
+                const frameH = 48; // Corrected frame height!
+                
+                let frameX = 0;
+                let frameY = 624; // Row Index 13: Gallop Right
+                let scale = 2.2; // Scale up to maintain size
+                
+                // Offset horizontal position of the horse so it is centered on the fret
+                const xOffset = -frameW * scale / 2 + 10;
+
+                if (p.stumbleTimer > 0) {
+                    frameY = 1008; // Row Index 21: Right Fall / Die
+                    // Hold the first frame of falling
+                    frameX = 0;
+                } else {
+                    // Running profile animation (Gallop Right)
+                    // Has 6 frames
+                    frameX = Math.floor(this.globalAnimTimer * 0.4) % 6;
+                }
+                
+                ctx.drawImage(horseImg, frameX * frameW, frameY, frameW, frameH, xOffset, -frameH * scale, frameW * scale, frameH * scale);
+            } else {
+                // Fallback box
+                ctx.fillStyle = p.stumbleTimer > 0 ? '#e74c3c' : '#fff';
+                ctx.fillRect(-30, -60, 60, 60);
+            }
+
+            ctx.restore();
         }
     }
 };
