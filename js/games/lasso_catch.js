@@ -11,8 +11,6 @@ const lassoCatch = {
         { x: 0, speed: 4, direction: 1, cooldown: 0 }
     ],
 
-    ],
-
     prevInput: null,
     images: {},
 
