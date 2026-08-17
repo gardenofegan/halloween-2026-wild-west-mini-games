@@ -12,9 +12,21 @@ const snakeBite = {
     images: {},
 
     loadImages: function() {
-        if (typeof Image !== 'undefined' && !this.images.snake) {
-            this.images.snake = new Image();
-            this.images.snake.src = 'assets/images/animals/PNG/Round/snake.png';
+        if (typeof Image !== 'undefined' && !this.images.snakes) {
+            this.images.snakes = [];
+            const files = ['SnakeAlbino-Walk.png', 'SnakeBlue-Walk.png', 'SnakeBrown-Walk.png', 'SnakeCorn-Walk.png', 'SnakeGreen-Walk.png', 'SnakeRed-Walk.png'];
+            for (let f of files) {
+                let img = new Image();
+                img.src = 'assets/images/snakes/' + f;
+                this.images.snakes.push(img);
+            }
+        }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                rattle: new Audio('assets/audio/impact-audio/impactGeneric_light_000.ogg'),
+                strike: new Audio('assets/audio/impact-audio/impactSoft_heavy_000.ogg')
+            };
+            this.audio.rattle.volume = 0.5;
         }
     },
 
@@ -22,6 +34,8 @@ const snakeBite = {
         this.loadImages();
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
+        this.globalAnimTimer = 0;
+        this.currentSnakeIndex = 0;
         this.startNewRound();
     },
 
@@ -29,6 +43,7 @@ const snakeBite = {
         this.state = 'RATTLING';
         this.eliminated = [false, false, false, false];
         this.winnerIndex = -1;
+        this.currentSnakeIndex = Math.floor(Math.random() * 6);
         // Random rattle time between 2 and 6 seconds (120 to 360 frames)
         this.timer = Math.floor(Math.random() * 240) + 120;
     },
@@ -40,6 +55,8 @@ const snakeBite = {
             this.prevInput = { players: input.players.map(p => ({ ...p })) };
             return;
         }
+
+        this.globalAnimTimer++;
 
         const isPressed = (playerIndex, btn) => {
             return input.players[playerIndex][btn] && !this.prevInput.players[playerIndex][btn];
@@ -73,6 +90,10 @@ const snakeBite = {
 
             if (this.timer <= 0) {
                 this.state = 'STRIKING';
+                if (this.audio && this.audio.strike) {
+                    this.audio.strike.currentTime = 0;
+                    this.audio.strike.play().catch(e=>{});
+                }
             }
         } else if (this.state === 'STRIKING') {
             for (let i = 0; i < 4; i++) {
@@ -101,6 +122,11 @@ const snakeBite = {
         ctx.textAlign = 'center';
         const colors = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
         
+        let snakeImg = null;
+        if (this.images.snakes && this.images.snakes.length > 0) {
+            snakeImg = this.images.snakes[this.currentSnakeIndex];
+        }
+
         if (this.state === 'RATTLING') {
             ctx.fillStyle = '#fff';
             ctx.font = "bold 50px 'Rye', 'Impact', sans-serif";
@@ -110,13 +136,30 @@ const snakeBite = {
             ctx.save();
             ctx.translate(width / 2, height / 2 + 50);
             
-            const shake = (Math.floor(Date.now() / 30) % 2 === 0) ? 5 : -5;
+            // The rattle shake
+            const shake = (Math.floor(Date.now() / 30) % 2 === 0) ? 10 : -10;
             ctx.translate(shake, 0);
 
-            if (this.images.snake && this.images.snake.complete) {
-                const w = this.images.snake.width * 2;
-                const h = this.images.snake.height * 2;
-                ctx.drawImage(this.images.snake, -w/2, -h/2, w, h);
+            // Audio tick for rattle
+            if (this.globalAnimTimer % 5 === 0 && this.audio && this.audio.rattle) {
+                this.audio.rattle.currentTime = 0;
+                this.audio.rattle.play().catch(e=>{});
+            }
+
+            if (snakeImg && snakeImg.complete) {
+                const frameH = snakeImg.height;
+                const frameW = frameH; // Assuming square frames
+                const numFrames = Math.max(1, Math.floor(snakeImg.width / frameW));
+                
+                // Fast animation for rattling
+                const frameIndex = Math.floor(this.globalAnimTimer * 0.5) % numFrames;
+                const scale = 12; // Massive on screen
+                
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(snakeImg, 
+                    frameIndex * frameW, 0, frameW, frameH, 
+                    (-frameW * scale)/2, (-frameH * scale)/2, frameW * scale, frameH * scale);
+                ctx.imageSmoothingEnabled = true;
             }
             ctx.restore();
 
@@ -129,11 +172,23 @@ const snakeBite = {
             ctx.save();
             ctx.translate(width / 2, height / 2 + 50);
             
-            if (this.images.snake && this.images.snake.complete) {
-                // Make it huge and slightly moved up
-                const w = this.images.snake.width * 6;
-                const h = this.images.snake.height * 6;
-                ctx.drawImage(this.images.snake, -w/2, -h/2 - 100, w, h);
+            if (snakeImg && snakeImg.complete) {
+                const frameH = snakeImg.height;
+                const frameW = frameH;
+                const numFrames = Math.max(1, Math.floor(snakeImg.width / frameW));
+                
+                // Pick a wide mouth or final frame if available, otherwise frame 0
+                const frameIndex = numFrames - 1; // Assuming last frame is most extended/aggressive
+                const scale = 24; // MEGA massive for the strike
+                
+                // Move snake up as if leaping at the screen
+                ctx.translate(0, -100);
+                
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(snakeImg, 
+                    frameIndex * frameW, 0, frameW, frameH, 
+                    (-frameW * scale)/2, (-frameH * scale)/2, frameW * scale, frameH * scale);
+                ctx.imageSmoothingEnabled = true;
             }
             ctx.restore();
 

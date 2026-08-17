@@ -33,6 +33,12 @@ const lassoCatch = {
                 this.images.cows.push(img);
             }
         }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                throw: new Audio('assets/audio/rpg-audio/clothBelt.ogg'),
+                miss: new Audio('assets/audio/rpg-audio/cloth1.ogg')
+            };
+        }
     },
 
     reset: function() {
@@ -99,6 +105,10 @@ const lassoCatch = {
                 }
 
                 if (throwActive && this.playerStates[i].cooldown <= 0) {
+                    if (this.audio && this.audio.throw) {
+                        this.audio.throw.currentTime = 0;
+                        this.audio.throw.play().catch(e=>{});
+                    }
                     for (let j = 0; j < lane.length; j++) {
                         const target = lane[j];
                         if (target.cooldown <= 0) {
@@ -116,6 +126,10 @@ const lassoCatch = {
                     if (!caughtAny) {
                         this.playerStates[i].status = 'MISSED!';
                         this.playerStates[i].cooldown = 15; // Small penalty for missing
+                        if (this.audio && this.audio.miss) {
+                            this.audio.miss.currentTime = 0;
+                            this.audio.miss.play().catch(e=>{});
+                        }
                     }
                 }
 

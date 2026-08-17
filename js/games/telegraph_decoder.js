@@ -33,6 +33,13 @@ const telegraphDecoder = {
             this.images.lightOff = new Image();
             this.images.lightOff.src = 'assets/images/ui-pack/PNG/buttonRound_grey.png';
         }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                tone: new Audio('assets/audio/digital-audio/tone1.ogg'),
+                wrong: new Audio('assets/audio/digital-audio/pepSound1.ogg'),
+                correct: new Audio('assets/audio/digital-audio/powerUp1.ogg')
+            };
+        }
     },
 
     reset: function() {
@@ -93,6 +100,10 @@ const telegraphDecoder = {
                         // Turn signal ON
                         this.isSignalOn = true;
                         this.playbackTimer = this.sequence[this.playbackIndex] === 'long' ? 45 : 15;
+                        if (this.audio && this.audio.tone) {
+                            this.audio.tone.currentTime = 0;
+                            this.audio.tone.play().catch(e=>{});
+                        }
                     }
                 } else {
                     // Turn signal OFF
@@ -113,6 +124,13 @@ const telegraphDecoder = {
                     if (!p.failed && !p.success) {
                         allFailed = false;
 
+                        if (isPressed(i, 'red')) {
+                            if (this.audio && this.audio.tone) {
+                                this.audio.tone.currentTime = 0;
+                                this.audio.tone.play().catch(e=>{});
+                            }
+                        }
+
                         if (isHeld(i, 'red')) {
                             p.pressTimer++;
                         }
@@ -128,6 +146,10 @@ const telegraphDecoder = {
                             let currentIndex = p.inputs.length - 1;
                             if (p.inputs[currentIndex] !== this.sequence[currentIndex]) {
                                 p.failed = true;
+                                if (this.audio && this.audio.wrong) {
+                                    this.audio.wrong.currentTime = 0;
+                                    this.audio.wrong.play().catch(e=>{});
+                                }
                             } else if (p.inputs.length === this.sequence.length) {
                                 // They got the whole sequence!
                                 p.success = true;
@@ -136,6 +158,10 @@ const telegraphDecoder = {
                                 this.level = Math.min(this.level + 1, 7); // Increase difficulty
                                 this.state = 'RESULT';
                                 this.resultTimer = 120;
+                                if (this.audio && this.audio.correct) {
+                                    this.audio.correct.currentTime = 0;
+                                    this.audio.correct.play().catch(e=>{});
+                                }
                             }
                         }
                     }

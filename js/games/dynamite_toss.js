@@ -20,9 +20,15 @@ const dynamiteToss = {
             this.images.dynamite = new Image();
             this.images.dynamite.src = 'assets/images/platformer/Base pack/Items/bomb.png';
             this.images.boom = new Image();
-            this.images.boom.src = 'assets/images/particle/PNG (Transparent)/fire_01.png';
+            this.images.boom.src = 'assets/images/explosion/Sprite_Sheets/Exploding Red Oil Barrel.png';
             this.images.smoke = new Image();
             this.images.smoke.src = 'assets/images/particle/PNG (Transparent)/smoke_01.png';
+        }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                boom: new Audio('assets/audio/impact-audio/impactMining_000.ogg'),
+                fizzle: new Audio('assets/audio/impact-audio/impactGlass_light_000.ogg')
+            };
         }
     },
 
@@ -93,9 +99,17 @@ const dynamiteToss = {
                             p.state = 'ANIMATING_SUCCESS';
                             p.timer = 60; // 1 second animation
                             this.scores[i] += 1;
+                            if (this.audio && this.audio.boom) {
+                                this.audio.boom.currentTime = 0;
+                                this.audio.boom.play().catch(e=>{});
+                            }
                         } else {
                             p.state = 'ANIMATING_FAIL';
                             p.timer = 60;
+                            if (this.audio && this.audio.fizzle) {
+                                this.audio.fizzle.currentTime = 0;
+                                this.audio.fizzle.play().catch(e=>{});
+                            }
                         }
                     }
                 } else if (p.state === 'ANIMATING_SUCCESS' || p.state === 'ANIMATING_FAIL') {
@@ -141,27 +155,47 @@ const dynamiteToss = {
             ctx.font = "bold 40px 'Rye', sans-serif";
             ctx.fillText(`P${i+1}: ${this.scores[i]}`, centerX, 150);
 
-            // Draw Safe
+            // Draw Safe (The grey square is a Bank Safe!)
             ctx.fillStyle = '#555';
             ctx.fillRect(centerX - 60, bottomY - 120, 120, 120);
+            ctx.fillStyle = '#777';
+            ctx.fillRect(centerX - 50, bottomY - 110, 100, 100);
+            
+            // Dial/Handle
             ctx.fillStyle = '#333';
             ctx.beginPath();
-            ctx.arc(centerX, bottomY - 60, 30, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.fillStyle = '#777';
+            ctx.arc(centerX, bottomY - 60, 25, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw handle
+            // Draw handle cross
             ctx.fillStyle = '#111';
-            ctx.fillRect(centerX - 5, bottomY - 90, 10, 60);
+            ctx.fillRect(centerX - 5, bottomY - 95, 10, 70);
+            ctx.fillRect(centerX - 35, bottomY - 65, 70, 10);
+
+            // Add a huge '$' sign to make it clear it's a bank safe
+            ctx.fillStyle = '#f1c40f'; // Gold
+            ctx.font = "bold 30px 'Rye', sans-serif";
+            ctx.fillText("$", centerX - 35, bottomY - 80);
 
             // Draw State Animations
             if (p.state === 'ANIMATING_SUCCESS') {
                 // EXPLOSION
-                const boomRadius = (60 - p.timer) * 3;
                 if (this.images.boom && this.images.boom.complete) {
-                    ctx.drawImage(this.images.boom, centerX - boomRadius, bottomY - 60 - boomRadius, boomRadius*2, boomRadius*2);
+                    const frameW = 32;
+                    const frameH = 32;
+                    const numFrames = 12;
+                    // Map 60..0 to 0..11 frames
+                    let frameIndex = Math.floor(((60 - p.timer) / 60) * numFrames);
+                    if (frameIndex >= numFrames) frameIndex = numFrames - 1;
+
+                    const scale = 8; // 32 * 8 = 256
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(this.images.boom,
+                        frameIndex * frameW, 0, frameW, frameH,
+                        centerX - (frameW*scale)/2, bottomY - 60 - (frameH*scale)/2, frameW * scale, frameH * scale);
+                    ctx.imageSmoothingEnabled = true;
                 } else {
+                    const boomRadius = (60 - p.timer) * 3;
                     ctx.fillStyle = (Math.floor(p.timer / 4) % 2 === 0) ? '#ff0' : '#f00';
                     ctx.beginPath();
                     ctx.arc(centerX, bottomY - 60, boomRadius, 0, Math.PI * 2);

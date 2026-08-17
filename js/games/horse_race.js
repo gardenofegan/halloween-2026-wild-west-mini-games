@@ -32,6 +32,12 @@ const horseRace = {
                 this.images.horses.push(img);
             }
         }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                jump: new Audio('assets/audio/rpg-audio/footstep00.ogg'),
+                miss: new Audio('assets/audio/impact-audio/impactWood_heavy_000.ogg')
+            };
+        }
     },
 
     reset: function() {
@@ -128,10 +134,18 @@ const horseRace = {
                                 p.jumpTimer = 45; // Jump animation duration
                                 h.clearedBy[i] = true; // Marks it cleared so we don't draw it for this player
                                 hit = true;
+                                if (this.audio && this.audio.jump) {
+                                    this.audio.jump.currentTime = 0;
+                                    this.audio.jump.play().catch(e=>{});
+                                }
                             } else {
                                 // Wrong button
                                 p.stumbleTimer = 30;
                                 hit = true;
+                                if (this.audio && this.audio.miss) {
+                                    this.audio.miss.currentTime = 0;
+                                    this.audio.miss.play().catch(e=>{});
+                                }
                             }
                             break; // Process only the closest hurdle
                         }
@@ -139,6 +153,10 @@ const horseRace = {
                     if (!hit) {
                         // Pressed button but no hurdle in zone -> early/late penalty
                         p.stumbleTimer = 20;
+                        if (this.audio && this.audio.miss) {
+                            this.audio.miss.currentTime = 0;
+                            this.audio.miss.play().catch(e=>{});
+                        }
                     }
                 }
             }
@@ -148,6 +166,10 @@ const horseRace = {
                 if (!h.hitBy[i] && h.x < playerX - HIT_TOLERANCE) {
                     h.hitBy[i] = true;
                     p.stumbleTimer = 30; // Tripped over it
+                    if (this.audio && this.audio.miss) {
+                        this.audio.miss.currentTime = 0;
+                        this.audio.miss.play().catch(e=>{});
+                    }
                 }
             }
         }

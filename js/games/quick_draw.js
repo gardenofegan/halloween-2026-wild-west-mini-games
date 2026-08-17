@@ -30,6 +30,12 @@ const quickDraw = {
             img.src = imgList[key];
             this.images[key] = img;
         }
+        
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                shot: new Audio('assets/audio/impact-audio/impactWood_heavy_000.ogg')
+            };
+        }
         this.imagesLoaded = true;
     },
 
@@ -94,6 +100,10 @@ const quickDraw = {
                 if (activePlayers && activePlayers[i]) {
                     if (isPressed(i, 'red') && !this.falseStarts[i] && this.shotTimers[i] === -1) {
                         this.shotTimers[i] = 0;
+                        if (this.audio && this.audio.shot) {
+                            this.audio.shot.currentTime = 0;
+                            this.audio.shot.play().catch(e => {});
+                        }
                         if (this.state === 'DRAW') {
                             this.winnerIndex = i;
                             this.scores[i]++;

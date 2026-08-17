@@ -11,6 +11,11 @@ const goldRush = {
             this.images.gold = new Image();
             this.images.gold.src = 'assets/images/platformer/Base pack/Items/coinGold.png';
         }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                coin: new Audio('assets/audio/casino-audio/chips-collide-1.ogg')
+            };
+        }
     },
 
     reset: function() {
@@ -35,6 +40,10 @@ const goldRush = {
             if (activePlayers && activePlayers[i]) {
                 if (isPressed(i, 'red')) {
                     this.scores[i] += 1;
+                    if (this.audio && this.audio.coin) {
+                        this.audio.coin.currentTime = 0;
+                        this.audio.coin.play().catch(e=>{});
+                    }
                 }
             }
         }

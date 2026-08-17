@@ -23,11 +23,55 @@ const banditWhack = {
     images: {},
 
     loadImages: function() {
-        if (typeof Image !== 'undefined' && !this.images.crate) {
-            this.images.crate = new Image();
-            this.images.crate.src = 'assets/images/sokoban/PNG/Default size/Crates/crate_01.png';
+        if (typeof Image !== 'undefined' && !this.images.barrel) {
+            this.images.barrel = new Image();
+            this.images.barrel.src = 'assets/images/Barrel32x32.png';
+        }
+        if (typeof Audio !== 'undefined' && !this.audio) {
+            this.audio = {
+                whack: new Audio('assets/audio/impact-audio/impactPunch_medium_000.ogg'),
+                miss: new Audio('assets/audio/impact-audio/impactWood_light_000.ogg')
+            };
         }
     },
+
+    banditPixels: [
+        [0,0,0,5,5,5,5,5,5,5,5,5,5,0,0,0],
+        [0,0,5,1,1,1,1,1,1,1,1,1,1,5,0,0],
+        [0,5,1,3,3,3,3,3,3,3,3,3,3,1,5,0],
+        [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+        [0,0,0,5,2,2,2,2,2,2,2,2,5,0,0,0],
+        [0,0,0,5,2,4,5,2,2,5,4,2,5,0,0,0],
+        [0,0,0,5,2,4,4,2,2,4,4,2,5,0,0,0],
+        [0,0,0,5,2,2,2,2,2,2,2,2,5,0,0,0],
+        [0,0,0,5,3,3,3,3,3,3,3,3,5,0,0,0],
+        [0,0,0,5,3,3,3,3,3,3,3,3,5,0,0,0],
+        [0,0,5,3,3,3,3,3,3,3,3,3,3,5,0,0],
+        [0,5,3,3,3,5,3,3,3,3,5,3,3,3,5,0],
+        [5,3,3,3,5,0,5,3,3,5,0,5,3,3,3,5],
+        [5,3,3,5,0,0,0,5,5,0,0,0,5,3,3,5],
+        [5,3,5,0,0,0,0,0,0,0,0,0,0,5,3,5],
+        [5,5,0,0,0,0,0,0,0,0,0,0,0,0,5,5]
+    ],
+
+    banditWhackedPixels: [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,5,5,5,5,5,5,5,5,5,5,0,0,0],
+        [0,0,5,1,1,1,1,1,1,1,1,1,1,5,0,0],
+        [0,5,1,3,3,3,3,3,3,3,3,3,3,1,5,0],
+        [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+        [0,0,0,5,2,2,2,2,2,2,2,2,5,0,0,0],
+        [0,0,0,5,2,5,2,2,2,2,5,2,5,0,0,0], 
+        [0,0,0,5,2,2,5,2,2,5,2,2,5,0,0,0],
+        [0,0,0,5,2,5,2,2,2,2,5,2,5,0,0,0],
+        [0,0,0,5,3,3,3,3,3,3,3,3,5,0,0,0],
+        [0,0,5,3,3,3,3,3,3,3,3,3,3,5,0,0],
+        [0,5,3,3,3,5,3,3,3,3,5,3,3,3,5,0],
+        [5,3,3,3,5,0,5,3,3,5,0,5,3,3,3,5],
+        [5,3,3,5,0,0,0,5,5,0,0,0,5,3,3,5]
+    ],
 
     reset: function() {
         this.loadImages();
@@ -118,6 +162,10 @@ const banditWhack = {
                             bandit.timer = 15; // Show whacked state briefly
                             this.scores[i] += 1;
                             whackedAny = true;
+                            if (this.audio && this.audio.whack) {
+                                this.audio.whack.currentTime = 0;
+                                this.audio.whack.play().catch(e => {});
+                            }
                             break; // Only whack one per press
                         }
                     }
@@ -125,7 +173,10 @@ const banditWhack = {
                     if (!whackedAny) {
                         // Penalty!
                         this.scores[i] = Math.max(0, this.scores[i] - 1); // Deduct point, floor at 0
-                        // Visual feedback could be added here
+                        if (this.audio && this.audio.miss) {
+                            this.audio.miss.currentTime = 0;
+                            this.audio.miss.play().catch(e => {});
+                        }
                     }
                 }
             }
@@ -157,81 +208,49 @@ const banditWhack = {
         for (let i = 0; i < this.positions.length; i++) {
             let pos = this.positions[i];
 
-            // Draw Barrel/Hole
-            ctx.fillStyle = '#3d2314'; // Dark brown
-            ctx.beginPath();
-            ctx.ellipse(pos.x, pos.y + 40, 90, 40, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#1a0f00'; // Hole inside
-            ctx.beginPath();
-            ctx.ellipse(pos.x, pos.y + 40, 70, 25, 0, 0, Math.PI * 2);
-            ctx.fill();
-
             // Draw Bandit if exists
             let bandit = this.bandits[i];
             if (bandit) {
                 ctx.save();
-                ctx.translate(pos.x, pos.y);
+                ctx.translate(pos.x - 80, pos.y - 120); 
+                
+                const pixels = (bandit.state === 'whacked') ? this.banditWhackedPixels : this.banditPixels;
+                const size = 10; // 16 * 10 = 160 width
+                
+                const palette = {
+                    1: '#4e342e', // Hat (Dark Brown)
+                    2: '#ffccaa', // Skin
+                    3: colors[bandit.colorIndex], // Bandana & Hat Band
+                    4: '#ffffff', // Eyes
+                    5: '#000000'  // Outline
+                };
+
+                for (let r = 0; r < 16; r++) {
+                    for (let c = 0; c < 16; c++) {
+                        let p = pixels[r][c];
+                        if (p !== 0) {
+                            ctx.fillStyle = palette[p];
+                            ctx.fillRect(c * size, r * size, size, size);
+                        }
+                    }
+                }
                 
                 if (bandit.state === 'whacked') {
-                    // Draw dizzy bandit
-                    ctx.fillStyle = colors[bandit.colorIndex];
-                    ctx.fillRect(-40, -10, 80, 50); // Squished body
-                    ctx.fillStyle = '#ffcccc';
-                    ctx.beginPath();
-                    ctx.arc(0, -30, 30, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // X eyes
-                    ctx.strokeStyle = '#000';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(-15, -40); ctx.lineTo(-5, -30);
-                    ctx.moveTo(-5, -40); ctx.lineTo(-15, -30);
-                    ctx.moveTo(5, -40); ctx.lineTo(15, -30);
-                    ctx.moveTo(15, -40); ctx.lineTo(5, -30);
-                    ctx.stroke();
-
-                    // WHACK Text
                     ctx.fillStyle = '#fff';
                     ctx.font = "bold 40px 'Impact', sans-serif";
+                    ctx.translate(80, 50);
                     ctx.rotate(-0.2);
                     ctx.fillText("WHACK!", 0, -10);
-
-                } else {
-                    // Active Bandit
-                    ctx.fillStyle = colors[bandit.colorIndex];
-                    ctx.fillRect(-40, -60, 80, 100); // Body / Bandana
-                    
-                    // Head/Face showing above bandana
-                    ctx.fillStyle = '#ffccaa';
-                    ctx.fillRect(-30, -100, 60, 40);
-                    
-                    // Eyes (mean look)
-                    ctx.fillStyle = '#000';
-                    ctx.fillRect(-20, -90, 10, 5);
-                    ctx.fillRect(10, -90, 10, 5);
-                    ctx.beginPath();
-                    ctx.moveTo(-25, -95); ctx.lineTo(-10, -90); // Left eyebrow
-                    ctx.moveTo(25, -95); ctx.lineTo(10, -90);  // Right eyebrow
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-
-                    // Bandana knot
-                    ctx.fillStyle = colors[bandit.colorIndex];
-                    ctx.beginPath();
-                    ctx.moveTo(-30, -60);
-                    ctx.lineTo(-50, -40);
-                    ctx.lineTo(-40, -30);
-                    ctx.fill();
                 }
 
                 ctx.restore();
             }
 
             // Draw Barrel front (to cover bandit lower half)
-            if (this.images.crate && this.images.crate.complete) {
-                ctx.drawImage(this.images.crate, pos.x - 90, pos.y + 10, 180, 180);
+            if (this.images.barrel && this.images.barrel.complete) {
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(this.images.barrel, pos.x - 100, pos.y - 20, 200, 200);
+                ctx.imageSmoothingEnabled = true;
             } else {
                 ctx.fillStyle = '#5c3a21'; // Lighter brown
                 ctx.fillRect(pos.x - 90, pos.y + 40, 180, 90);
