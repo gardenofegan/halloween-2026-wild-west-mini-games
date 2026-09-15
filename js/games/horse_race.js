@@ -5,8 +5,8 @@ const horseRace = {
     
     // Each player has multiple targets (cows) in their lane
     hurdles: [],
-    spawnInterval: 80,
-    spawnTimer: 40,
+    spawnInterval: 120,
+    spawnTimer: 60,
     globalAnimTimer: 0,
     maxScore: 300,
     startX: 150,
@@ -45,8 +45,8 @@ const horseRace = {
         this.scores = [0, 0, 0, 0];
         this.prevInput = null;
         this.hurdles = [];
-        this.spawnInterval = 80;
-        this.spawnTimer = 40; // First hurdle spawns quickly
+        this.spawnInterval = 120;
+        this.spawnTimer = 60; // First hurdle spawns quickly
         this.globalAnimTimer = 0;
 
         for (let i = 0; i < 4; i++) {
@@ -82,12 +82,12 @@ const horseRace = {
                 hitBy: [false, false, false, false],
                 clearedBy: [false, false, false, false]
             });
-            // Gradually speed up the spawn rate (cap at 35 frames)
-            if (this.spawnInterval > 35) this.spawnInterval -= 1;
+            // Gradually speed up the spawn rate (cap at 60 frames)
+            if (this.spawnInterval > 60) this.spawnInterval -= 1;
         }
 
         // Move hurdles
-        const hurdleSpeed = 12;
+        const hurdleSpeed = 7;
         for (let h of this.hurdles) {
             h.x -= hurdleSpeed;
         }
@@ -106,8 +106,9 @@ const horseRace = {
             let p = this.players[i];
             
             // Dynamic Hit Zone: Horse advances right as score goes up
-            let playerX = this.startX + (this.scores[i] / this.maxScore) * (width - 400);
-            if (playerX > width - 200) playerX = width - 200; // Cap to keep on screen
+            let horseX = this.startX + (this.scores[i] / this.maxScore) * (width - 400);
+            if (horseX > width - 350) horseX = width - 350; // Cap to keep on screen
+            let targetX = horseX + 150; // The button target is ahead of the horse
             
             if (p.stumbleTimer > 0) p.stumbleTimer--;
             if (p.jumpTimer > 0) p.jumpTimer--;
@@ -126,7 +127,7 @@ const horseRace = {
                     let hit = false;
                     for (let h of this.hurdles) {
                         if (h.hitBy[i]) continue;
-                        if (Math.abs(h.x - playerX) < HIT_TOLERANCE) {
+                        if (Math.abs(h.x - targetX) < HIT_TOLERANCE) {
                             h.hitBy[i] = true;
                             if (h.color === pressedColor) {
                                 // Perfect jump
@@ -163,7 +164,7 @@ const horseRace = {
             
             // Check for missed hurdles that passed the player
             for (let h of this.hurdles) {
-                if (!h.hitBy[i] && h.x < playerX - HIT_TOLERANCE) {
+                if (!h.hitBy[i] && h.x < targetX - HIT_TOLERANCE) {
                     h.hitBy[i] = true;
                     p.stumbleTimer = 30; // Tripped over it
                     if (this.audio && this.audio.miss) {
@@ -213,16 +214,31 @@ const horseRace = {
             }
 
             // Calculate dynamic player X based on score
-            let playerX = this.startX + (this.scores[i] / this.maxScore) * (width - 400);
-            if (playerX > width - 200) playerX = width - 200;
+            let horseX = this.startX + (this.scores[i] / this.maxScore) * (width - 400);
+            if (horseX > width - 350) horseX = width - 350;
+            let targetX = horseX + 150;
 
-            // Draw Hit Zone line (The "Fret" moves with the horse)
-            ctx.strokeStyle = 'rgba(236, 240, 241, 0.4)'; // Make it slightly transparent so it's not distracting
-            ctx.lineWidth = 6;
+            // Draw Hit Zone (Target Window)
+            const HIT_TOLERANCE = 50;
+            
+            // Draw a prominent target box
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.2)'; // light green background
+            ctx.fillRect(targetX - HIT_TOLERANCE, laneY, HIT_TOLERANCE * 2, 150);
+            
+            // Draw border for target box
+            ctx.strokeStyle = 'rgba(46, 204, 113, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(targetX - HIT_TOLERANCE, laneY, HIT_TOLERANCE * 2, 150);
+
+            // Draw center dashed line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([10, 10]);
             ctx.beginPath();
-            ctx.moveTo(playerX, laneY);
-            ctx.lineTo(playerX, laneY + 150);
+            ctx.moveTo(targetX, laneY);
+            ctx.lineTo(targetX, laneY + 150);
             ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
 
             // Draw Player Score
             ctx.fillStyle = '#fff';
@@ -234,8 +250,8 @@ const horseRace = {
 
             // Draw Hurdles in this lane
             for (let h of this.hurdles) {
-                // If cleared by this player, we don't draw it (illusion of clearing it)
-                if (h.clearedBy[i]) continue;
+                // We no longer hide cleared hurdles, so the horse visually jumps over them!
+                // if (h.clearedBy[i]) continue;
                 
                 const hurdleY = laneY + stringOffsets[h.stringIdx];
                 const colorHex = stringColors[h.color];
@@ -267,7 +283,7 @@ const horseRace = {
 
             ctx.save();
             // Horse center (moves across the screen as score increases)
-            ctx.translate(playerX, laneY + 150 + yOffset);
+            ctx.translate(horseX, laneY + 150 + yOffset);
 
             // Stumble/Fall visual
             if (p.stumbleTimer > 0) {
